@@ -27,7 +27,7 @@ describe("ConversationHome", () => {
     render(<ConversationHome />);
 
     expect(screen.getByRole("button", { name: "Record" })).toBeInTheDocument();
-});
+  });
 
   it("opens recorder overlay when record button is clicked", async () => {
     const user = userEvent.setup();
@@ -37,5 +37,11 @@ describe("ConversationHome", () => {
     await user.click(screen.getByRole("button", { name: "Record" }));
 
     expect(screen.getByText("Tiny thought")).toBeInTheDocument();
+  });
+
+  it("does not show local tape before any message is sent", () => {
+    render(<ConversationHome />);
+
+    expect(screen.queryByText(/Local tape/i)).not.toBeInTheDocument();
   });
 });
