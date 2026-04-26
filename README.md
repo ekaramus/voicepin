@@ -244,6 +244,43 @@ Decision notes:
 - Drafts are local UI state for now and are not persisted
 - Sending a draft is wired as a temporary local action until writable repositories or Supabase persistence are added
 
+### Step 8 — Draft Snapshot System (Refinements)
+
+- Introduced context-aware recording actions:
+  - "Save" when creating a draft (no destination selected)
+  - "Send" when recording inside a conversation
+
+- Fixed draft lifecycle:
+  - Draft now owns its own audio URL (separate from recorder)
+  - Recorder state is reset after saving a draft
+  - Draft audio URLs are revoked when cleared or replaced
+
+- Improved recording UX:
+  - Added explicit “discard and close” (×) action in recording overlay
+  - Enabled users to exit recording after finishing without saving
+  - Clarified difference between:
+    - Redo (stay in recording)
+    - Close (discard and exit)
+    - Save/Send (commit action)
+
+- Ensured clean state transitions:
+  - No stale duration or progress after saving or deleting
+  - No residual audio after draft deletion
+  - Recorder always returns to a clean idle state
+
+Testing:
+- Verified draft creates a new object URL from audio blob
+- Verified object URLs are revoked when draft is replaced or cleared
+- Verified recorder resets after saving a draft
+- Verified discard action triggers close behavior
+- Updated overlay tests for context-aware action labels (Save vs Send)
+
+Decision notes:
+- Recording and draft are now fully decoupled to prevent state leakage
+- Explicit destructive action (×) was added to make discard behavior obvious
+- UI actions reflect user intent depending on context (draft vs direct message)
+- Clean state reset was prioritized to maintain a “single thought” interaction model
+
 ## Product Direction
 
 VoicePin is evolving toward a capture-first model:
