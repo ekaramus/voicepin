@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { RecordingOverlay } from "./RecordingOverlay";
 
 const defaultProps = {
+  mode: "draft" as const,
   status: "idle" as const,
   error: null,
   durationMs: 0,
@@ -56,7 +57,7 @@ describe("RecordingOverlay", () => {
   it("disables send until audio is recorded", () => {
     render(<RecordingOverlay {...defaultProps} />);
 
-    expect(screen.getByRole("button", { name: /send/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /save/i })).toBeDisabled();
   });
 
   it("enables send when audio is recorded", () => {
@@ -69,7 +70,7 @@ describe("RecordingOverlay", () => {
       />
     );
 
-    expect(screen.getByRole("button", { name: /send/i })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /save/i })).toBeEnabled();
   });
 
   it("shows too-short error", () => {
@@ -91,8 +92,36 @@ describe("RecordingOverlay", () => {
       />
     );
 
-    await user.click(screen.getByRole("button", { name: /send/i }));
+    await user.click(screen.getByRole("button", { name: /save/i }));
 
     expect(onSend).toHaveBeenCalledOnce();
+  });
+
+  it("shows Save button in draft mode", () => {
+    render(
+      <RecordingOverlay
+        {...defaultProps}
+        mode="draft"
+        status="recorded"
+        durationMs={1500}
+        audioUrl="blob:test"
+      />
+    );
+
+    expect(screen.getByRole("button", { name: /save/i })).toBeInTheDocument();
+  });
+
+  it("shows Send button in direct mode", () => {
+    render(
+      <RecordingOverlay
+        {...defaultProps}
+        mode="direct"
+        status="recorded"
+        durationMs={1500}
+        audioUrl="blob:test"
+      />
+    );
+
+    expect(screen.getByRole("button", { name: /send/i })).toBeInTheDocument();
   });
 });
