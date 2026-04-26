@@ -26,4 +26,14 @@ describe("ConversationHome", () => {
       screen.getByRole("heading", { name: "Me" })
     ).toBeInTheDocument();
   });
+
+  it("opens recorder overlay from home", async () => {
+    const user = userEvent.setup();
+
+    render(<ConversationHome />);
+
+    await user.click(screen.getByRole("button", { name: "Record" }));
+
+    expect(screen.getByText("Tiny thought")).toBeInTheDocument();
+  });
 });
