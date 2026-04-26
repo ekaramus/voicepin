@@ -105,10 +105,32 @@ Structure decisions:
 - Global test setup in `src/test/setup.ts`
 - Feature-based architecture (`features/`, `components/`)
 
-## Next Steps
+### Step 3 — Recorder Foundation
 
-- Build recording interaction (MediaRecorder API)
-- Add recording overlay UI
-- Connect audio upload (Supabase Storage)
-- Implement transcription (ElevenLabs)
-- Add realtime updates
+- Added recorder domain constants:
+  - max duration: 20 seconds
+  - minimum duration: 1 second
+  - audio format: webm
+- Added recorder domain types
+- Implemented `useAudioRecorder` hook using the browser MediaRecorder API
+- Added recording lifecycle states:
+  - idle
+  - requesting permission
+  - recording
+  - recorded
+  - error
+- Added hard auto-stop at 20 seconds
+- Added too-short recording validation
+- Added reusable `RecordButton`
+- Added full-screen recording overlay
+- Connected recorder overlay to the home screen
+
+Testing:
+- Verified recorder constraints
+- Verified recording starts after microphone permission
+- Verified recording stops and creates local audio
+- Verified recordings under 1 second are rejected
+- Verified recording auto-stops at 20 seconds
+- Verified permission denial is handled
+- Verified record button interactions
+- Verified overlay states
