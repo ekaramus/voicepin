@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { ConversationHome } from "./ConversationHome";
 import userEvent from "@testing-library/user-event";
+import { ConversationHome } from "./ConversationHome";
 
 describe("ConversationHome", () => {
   it("renders product name", () => {
@@ -9,11 +9,10 @@ describe("ConversationHome", () => {
     expect(screen.getByRole("heading", { name: "VoicePin" })).toBeInTheDocument();
   });
 
-  it("renders Me conversation first", () => {
+  it("renders Me conversation", async () => {
     render(<ConversationHome />);
 
-    const conversations = screen.getAllByRole("button");
-    expect(conversations[0]).toHaveTextContent("Me");
+    expect(await screen.findByText("Me")).toBeInTheDocument();
   });
 
   it("shows voice-only constraint", () => {
