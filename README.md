@@ -8,6 +8,12 @@ Just press, speak, and send.
 
 ---
 
+## Demo
+
+Coming soon
+
+---
+
 ## Concept
 
 Most apps treat voice as a secondary feature.
@@ -59,3 +65,50 @@ Every message is limited to a few seconds and automatically transcribed so it ca
 ```bash
 npm install
 npm run dev
+
+---
+
+## Dev Log
+
+### Step 1 — Project Initialization
+
+- Initialized Next.js (App Router) with TypeScript and Tailwind
+- Added ESLint configuration
+- Set up clean folder structure with `src/`
+- Configured environment variables
+- Installed core dependencies:
+  - lucide-react (icons)
+  - framer-motion (animations)
+  - zod (validation)
+  - @supabase/supabase-js
+- Added Vitest + Testing Library
+- Created global test setup
+
+### Step 2 — Mobile UI Foundation (Retro App Shell)
+
+- Implemented mobile-first app shell with retro “device frame”
+- Added design tokens for consistent styling
+- Built initial conversation list (Home screen)
+- Added pinned “Me” conversation
+- Introduced hard product constraint in UI (20 sec max)
+- Added placeholder record button (centered CTA)
+
+Testing:
+- Verified AppShell renders children correctly
+- Verified constraint banner is visible
+- Verified conversation list renders
+- Verified “Me” conversation is first
+- Verified record button exists
+
+Structure decisions:
+- Tests colocated with components
+- Global test setup in `src/test/setup.ts`
+- Feature-based architecture (`features/`, `components/`)
+
+## Next Steps
+
+- Build recording interaction (MediaRecorder API)
+- Add recording overlay UI
+- Connect audio upload (Supabase Storage)
+- Implement transcription (ElevenLabs)
+- Add realtime updates
