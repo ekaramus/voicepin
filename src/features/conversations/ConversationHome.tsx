@@ -1,34 +1,37 @@
 "use client";
 
-import { useState } from "react";
-import { RecordingOverlay } from "@/features/recorder/RecordingOverlay";
+import { useEffect, useState } from "react";
+import { ConversationRow } from "./ConversationRow";
+import { listConversations } from "./conversation.repository";
+import type { Conversation } from "./conversation.types";import { RecordingOverlay } from "@/features/recorder/RecordingOverlay";
 import { RecordButton } from "@/features/recorder/RecordButton";
 import { useAudioRecorder } from "@/features/recorder/useAudioRecorder";
 import { AudioMessageBubble } from "@/features/messages/AudioMessageBubble";
 import type { VoiceMessage } from "@/features/messages/message.types";
 
-const conversations = [
-  {
-    id: "me",
-    name: "Me",
-    preview: "Remember: record the demo before lunch.",
-    duration: "0:08",
-    pinned: true,
-  },
-  {
-    id: "anna",
-    name: "Anna",
-    preview: "Leaving now, be there in ten.",
-    duration: "0:06",
-    pinned: false,
-  },
-];
-
 export function ConversationHome() {
   const [isRecorderOpen, setIsRecorderOpen] = useState(false);
-  const [messages, setMessages] = useState<VoiceMessage[]>([]);
-  const recorder = useAudioRecorder();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [messages, setMessages] = useState<VoiceMessage[]>([]);  const recorder = useAudioRecorder();
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadConversations() {
+      const data = await listConversations();
+
+      if (isMounted) {
+        setConversations(data);
+      }
+    }
+
+    void loadConversations();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+  
   function closeRecorder() {
     setIsRecorderOpen(false);
     recorder.resetRecording();
@@ -72,34 +75,7 @@ export function ConversationHome() {
 
       <div>
         {conversations.map((conversation) => (
-          <button
-            key={conversation.id}
-            className="w-full border-b-2 border-[#27251f] p-4 text-left active:bg-[#eadfc9]"
-          >
-            <div className="flex items-start gap-3">
-              <div
-                className={
-                  conversation.pinned
-                    ? "grid h-12 w-12 place-items-center rounded-2xl border-2 border-[#27251f] bg-[#f7d35f] text-sm font-black shadow-[4px_4px_0_#27251f]"
-                    : "grid h-12 w-12 place-items-center rounded-2xl border-2 border-[#27251f] bg-[#b8d8c0] text-sm font-black shadow-[4px_4px_0_#27251f]"
-                }
-              >
-                {conversation.name.slice(0, 2).toUpperCase()}
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <h2 className="font-black tracking-[-0.04em]">
-                  {conversation.name}
-                </h2>
-                <p className="mt-1 truncate text-sm text-[#5a5347]">
-                  {conversation.preview}
-                </p>
-                <p className="mt-2 text-xs font-bold text-[#d94f2b]">
-                  {conversation.duration}
-                </p>
-              </div>
-            </div>
-          </button>
+          <ConversationRow key={conversation.id} conversation={conversation} />
         ))}
       </div>
 
