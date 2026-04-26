@@ -2,7 +2,11 @@ import { MAX_RECORDING_MS } from "./recorder.constants";
 import type { RecorderError, RecorderStatus } from "./recorder.types";
 import { RecordButton } from "./RecordButton";
 
+type RecordingOverlayMode = "draft" | "direct";
+
 type RecordingOverlayProps = {
+  mode: RecordingOverlayMode;
+
   status: RecorderStatus;
   error: RecorderError | null;
   durationMs: number;
@@ -29,6 +33,7 @@ export function RecordingOverlay({
   onReset,
   onClose,
   onSend,
+  mode
 }: RecordingOverlayProps) {
   const isRecording = status === "recording";
   const isRecorded = status === "recorded";
@@ -102,7 +107,7 @@ export function RecordingOverlay({
           onClick={onSend}
           className="rounded-2xl border-2 border-[#f4ead7] bg-[#d94f2b] px-4 py-4 text-sm font-black uppercase tracking-[0.16em] shadow-[4px_4px_0_#0f0e0c] disabled:opacity-40"
         >
-          Send
+          {mode === "draft" ? "Save" : "Send"}
         </button>
       </div>
     </section>

@@ -124,6 +124,7 @@ export function ConversationHome() {
 
       {isRecorderOpen && (
         <RecordingOverlay
+          mode="draft"
           status={recorder.status}
           error={recorder.error}
           durationMs={recorder.durationMs}
