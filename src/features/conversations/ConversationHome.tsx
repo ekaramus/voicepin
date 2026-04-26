@@ -4,6 +4,8 @@ import { useState } from "react";
 import { RecordingOverlay } from "@/features/recorder/RecordingOverlay";
 import { RecordButton } from "@/features/recorder/RecordButton";
 import { useAudioRecorder } from "@/features/recorder/useAudioRecorder";
+import { AudioMessageBubble } from "@/features/messages/AudioMessageBubble";
+import type { VoiceMessage } from "@/features/messages/message.types";
 
 const conversations = [
   {
@@ -24,11 +26,32 @@ const conversations = [
 
 export function ConversationHome() {
   const [isRecorderOpen, setIsRecorderOpen] = useState(false);
+  const [messages, setMessages] = useState<VoiceMessage[]>([]);
   const recorder = useAudioRecorder();
 
   function closeRecorder() {
     setIsRecorderOpen(false);
     recorder.resetRecording();
+  }
+
+  function sendLocalMessage() {
+    if (!recorder.audio) {
+      return;
+    }
+
+    const message: VoiceMessage = {
+      id: crypto.randomUUID(),
+      conversationId: "me",
+      sender: "me",
+      audioUrl: recorder.audio.url,
+      durationMs: recorder.audio.durationMs,
+      transcript: null,
+      status: "local",
+      createdAt: new Date().toISOString(),
+    };
+
+    setMessages((currentMessages) => [message, ...currentMessages]);
+    setIsRecorderOpen(false);
   }
 
   return (
@@ -80,6 +103,18 @@ export function ConversationHome() {
         ))}
       </div>
 
+      {messages.length > 0 && (
+        <section className="space-y-4 border-t-2 border-[#27251f] bg-[#eadfc9] p-4">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-[#6f6758]">
+            Local tape
+          </p>
+
+          {messages.map((message) => (
+            <AudioMessageBubble key={message.id} message={message} />
+          ))}
+        </section>
+      )}
+
       <div className="mt-auto flex justify-center p-6">
         <RecordButton
           onClick={() => {
@@ -98,6 +133,7 @@ export function ConversationHome() {
           onStop={recorder.stopRecording}
           onReset={recorder.resetRecording}
           onClose={closeRecorder}
+          onSend={sendLocalMessage}
         />
       )}
     </div>
