@@ -10,6 +10,7 @@ const defaultProps = {
   onStop: vi.fn(),
   onReset: vi.fn(),
   onClose: vi.fn(),
+  onSend: vi.fn(),
 };
 
 describe("RecordingOverlay", () => {
@@ -75,5 +76,23 @@ describe("RecordingOverlay", () => {
     render(<RecordingOverlay {...defaultProps} status="error" error="too-short" />);
 
     expect(screen.getByRole("alert")).toHaveTextContent(/too short/i);
+  });
+  it("calls onSend when recorded audio is sent", async () => {
+    const user = userEvent.setup();
+    const onSend = vi.fn();
+
+    render(
+      <RecordingOverlay
+        {...defaultProps}
+        status="recorded"
+        durationMs={1_500}
+        audioUrl="blob:test"
+        onSend={onSend}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: /send/i }));
+
+    expect(onSend).toHaveBeenCalledOnce();
   });
 });

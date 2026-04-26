@@ -11,6 +11,7 @@ type RecordingOverlayProps = {
   onStop: () => void;
   onReset: () => void;
   onClose: () => void;
+  onSend: () => void;
 };
 
 function formatDuration(durationMs: number) {
@@ -27,6 +28,7 @@ export function RecordingOverlay({
   onStop,
   onReset,
   onClose,
+  onSend,
 }: RecordingOverlayProps) {
   const isRecording = status === "recording";
   const isRecorded = status === "recorded";
@@ -97,7 +99,7 @@ export function RecordingOverlay({
         <button
           type="button"
           disabled={!isRecorded}
-          onClick={onClose}
+          onClick={onSend}
           className="rounded-2xl border-2 border-[#f4ead7] bg-[#d94f2b] px-4 py-4 text-sm font-black uppercase tracking-[0.16em] shadow-[4px_4px_0_#0f0e0c] disabled:opacity-40"
         >
           Send
