@@ -43,4 +43,18 @@ describe("ConversationHome", () => {
 
     expect(screen.queryByText(/Local tape/i)).not.toBeInTheDocument();
   });
+
+  it("opens selected conversation detail", async () => {
+    const user = userEvent.setup();
+
+    render(<ConversationHome />);
+
+    await user.click(await screen.findByRole("button", { name: /Me/i }));
+
+    expect(
+      screen.getByRole("heading", { name: "Me" })
+    ).toBeInTheDocument();
+
+    expect(screen.getByText(/private tape/i)).toBeInTheDocument();
+  });
 });
