@@ -150,3 +150,17 @@ Testing:
 - Verified audio bubble renders controls, duration, and transcript state
 - Verified recording overlay calls send handler
 - Verified home screen starts without local messages
+
+### Step 5 — Environment and Supabase Client Setup
+
+- Added `.env.example` for required public configuration
+- Added Zod-based validation for client environment variables
+- Added tests for valid, missing, and invalid environment values
+- Added Supabase browser client factory
+- Added tests to verify Supabase client initialization
+- Kept service-role credentials out of scope until server-side operations are needed
+
+Decision notes:
+- Environment validation is added early to avoid unclear runtime failures later
+- Supabase setup is introduced before auth/storage so future steps can build on a stable integration layer
+- `.env.local` is used locally and excluded from Git
