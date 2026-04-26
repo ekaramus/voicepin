@@ -134,3 +134,19 @@ Testing:
 - Verified permission denial is handled
 - Verified record button interactions
 - Verified overlay states
+
+### Step 4 — Local Voice Message Flow
+
+- Added voice message domain types
+- Added duration formatter for audio messages
+- Added reusable audio message bubble
+- Added send callback to recording overlay
+- Connected recorded audio to local message state
+- Displayed local voice snapshots in a temporary local tape section
+- Kept storage/upload out of scope for this step
+
+Testing:
+- Verified duration formatting
+- Verified audio bubble renders controls, duration, and transcript state
+- Verified recording overlay calls send handler
+- Verified home screen starts without local messages
