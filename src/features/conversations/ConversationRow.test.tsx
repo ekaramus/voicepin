@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { ConversationRow } from "./ConversationRow";
 import type { Conversation } from "./conversation.types";
+import userEvent from "@testing-library/user-event";
 
 const conversation: Conversation = {
   id: "me",
@@ -36,5 +37,16 @@ describe("ConversationRow", () => {
     render(<ConversationRow conversation={conversation} />);
 
     expect(screen.getByText("ME")).toBeInTheDocument();
+  });
+
+  it("calls onClick with conversation when pressed", async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+
+    render(<ConversationRow conversation={conversation} onClick={onClick} />);
+
+    await user.click(screen.getByRole("button"));
+
+    expect(onClick).toHaveBeenCalledWith(conversation);
   });
 });

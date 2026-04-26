@@ -3,12 +3,14 @@ import type { Conversation } from "./conversation.types";
 
 type ConversationRowProps = {
   conversation: Conversation;
+  onClick?: (conversation: Conversation) => void;
 };
 
-export function ConversationRow({ conversation }: ConversationRowProps) {
+export function ConversationRow({ conversation, onClick }: ConversationRowProps) {
   return (
     <button
       type="button"
+      onClick={() => onClick?.(conversation)}
       className="w-full border-b-2 border-[#27251f] p-4 text-left active:bg-[#eadfc9]"
     >
       <div className="flex items-start gap-3">
@@ -23,9 +25,7 @@ export function ConversationRow({ conversation }: ConversationRowProps) {
         </div>
 
         <div className="min-w-0 flex-1">
-          <h2 className="font-black tracking-[-0.04em]">
-            {conversation.name}
-          </h2>
+          <h2 className="font-black tracking-[-0.04em]">{conversation.name}</h2>
 
           <p className="mt-1 truncate text-sm text-[#5a5347]">
             {conversation.preview}
