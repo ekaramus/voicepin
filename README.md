@@ -164,3 +164,25 @@ Decision notes:
 - Environment validation is added early to avoid unclear runtime failures later
 - Supabase setup is introduced before auth/storage so future steps can build on a stable integration layer
 - `.env.local` is used locally and excluded from Git
+
+### Step 6 — Conversation Domain Layer
+
+- Added typed conversation domain models
+- Added mock conversation data as a temporary local data source
+- Added conversation sorting logic with “Me” always pinned first
+- Added conversation repository function to create a future-ready data boundary
+- Extracted reusable `ConversationRow`
+- Updated the home screen to load conversations through the repository layer
+- Kept Supabase queries out of scope for this step
+
+Testing:
+- Verified conversation sorting keeps the self conversation first
+- Verified direct conversations sort by most recent update
+- Verified sorting does not mutate the original array
+- Verified repository returns conversations in expected order
+- Verified conversation rows render name, preview, initials, and duration
+- Updated home screen tests for async conversation loading
+
+Decision notes:
+- A repository boundary was introduced before real Supabase queries so the UI will not need major changes when mock data is replaced
+- The “Me” conversation is treated as a first-class conversation type instead of a UI-only special case
