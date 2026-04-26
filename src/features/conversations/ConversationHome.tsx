@@ -5,11 +5,22 @@ import { ConversationDetail } from "./ConversationDetail";
 import { ConversationRow } from "./ConversationRow";
 import { listConversations } from "./conversation.repository";
 import type { Conversation } from "./conversation.types";
+import { DraftBar } from "@/features/drafts/DraftBar";
+import { DraftDestinationPicker } from "@/features/drafts/DraftDestinationPicker";
+import { useDraftSnapshot } from "@/features/drafts/useDraftSnapshot";
+import { RecordButton } from "@/features/recorder/RecordButton";
+import { RecordingOverlay } from "@/features/recorder/RecordingOverlay";
+import { useAudioRecorder } from "@/features/recorder/useAudioRecorder";
+import { createMessageFromDraft } from "@/features/messages/createMessageFromDraft";
 
 export function ConversationHome() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] =
     useState<Conversation | null>(null);
+  const [isRecorderOpen, setIsRecorderOpen] = useState(false);
+  const [isDestinationPickerOpen, setIsDestinationPickerOpen] = useState(false);
+  const draftState = useDraftSnapshot();
+  const recorder = useAudioRecorder();
 
   useEffect(() => {
     let isMounted = true;
@@ -28,6 +39,37 @@ export function ConversationHome() {
       isMounted = false;
     };
   }, []);
+
+  function closeRecorder() {
+    setIsRecorderOpen(false);
+    recorder.resetRecording();
+  }
+
+  function createDraftFromRecording() {
+    if (!recorder.audio) {
+      return;
+    }
+
+    draftState.createDraft(recorder.audio);
+    setIsRecorderOpen(false);
+  }
+
+  function sendDraftToConversation(conversation: Conversation) {
+    if (!draftState.draft) {
+      return;
+    }
+
+    const message = createMessageFromDraft({
+      draft: draftState.draft,
+      conversationId: conversation.id,
+    });
+
+    // Temporary until Supabase/local repositories are writable.
+    console.log("Draft sent as local message:", message);
+
+    draftState.clearDraft();
+    setIsDestinationPickerOpen(false);
+  }
 
   if (selectedConversation) {
     return (
@@ -67,6 +109,41 @@ export function ConversationHome() {
           />
         ))}
       </div>
+
+      <div className="mt-auto flex justify-center p-6">
+        <RecordButton onClick={() => setIsRecorderOpen(true)} />
+      </div>
+
+      {draftState.draft && (
+        <DraftBar
+          draft={draftState.draft}
+          onSend={() => setIsDestinationPickerOpen(true)}
+          onDelete={draftState.clearDraft}
+        />
+      )}
+
+      {isRecorderOpen && (
+        <RecordingOverlay
+          status={recorder.status}
+          error={recorder.error}
+          durationMs={recorder.durationMs}
+          audioUrl={recorder.audio?.url}
+          onStart={recorder.startRecording}
+          onStop={recorder.stopRecording}
+          onReset={recorder.resetRecording}
+          onClose={closeRecorder}
+          onSend={createDraftFromRecording}
+        />
+      )}
+
+      {draftState.draft && isDestinationPickerOpen && (
+        <DraftDestinationPicker
+          draft={draftState.draft}
+          conversations={conversations}
+          onSelect={sendDraftToConversation}
+          onCancel={() => setIsDestinationPickerOpen(false)}
+        />
+      )}
     </div>
   );
 }
