@@ -218,6 +218,32 @@ Decision notes:
   - user decides where to send the recording after capture
 - Avoided introducing multiple message entry points to keep UX predictable
 
+### Step 8 — Draft Snapshot System
+
+- Added a draft voice snapshot domain type
+- Added a draft state hook that allows only one active draft at a time
+- Added a persistent draft bar with audio preview, duration, send, and delete actions
+- Added a destination picker for choosing where a draft should be sent
+- Added a message factory that converts a draft into a local voice message
+- Connected global home recording to draft creation
+- Kept direct recording inside conversation detail for quick replies
+
+Testing:
+- Verified draft state starts empty
+- Verified a recording can create a draft
+- Verified new drafts replace older drafts
+- Verified drafts can be cleared
+- Verified draft bar renders preview, duration, send, and delete actions
+- Verified destination picker renders available conversations and selection callbacks
+- Verified draft-to-message conversion
+- Verified home opens the recorder overlay
+
+Decision notes:
+- VoicePin now supports the capture-first flow: record first, choose destination after
+- Only one draft is allowed at a time to avoid creating a second inbox
+- Drafts are local UI state for now and are not persisted
+- Sending a draft is wired as a temporary local action until writable repositories or Supabase persistence are added
+
 ## Product Direction
 
 VoicePin is evolving toward a capture-first model:
