@@ -1,3 +1,10 @@
+"use client";
+
+import { useState } from "react";
+import { RecordingOverlay } from "@/features/recorder/RecordingOverlay";
+import { RecordButton } from "@/features/recorder/RecordButton";
+import { useAudioRecorder } from "@/features/recorder/useAudioRecorder";
+
 const conversations = [
   {
     id: "me",
@@ -16,8 +23,16 @@ const conversations = [
 ];
 
 export function ConversationHome() {
+  const [isRecorderOpen, setIsRecorderOpen] = useState(false);
+  const recorder = useAudioRecorder();
+
+  function closeRecorder() {
+    setIsRecorderOpen(false);
+    recorder.resetRecording();
+  }
+
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="relative flex flex-1 flex-col">
       <header className="border-b-2 border-[#27251f] px-5 py-4">
         <h1 className="text-2xl font-black tracking-[-0.08em]">VoicePin</h1>
         <p className="mt-1 text-xs uppercase tracking-[0.16em] text-[#6f6758]">
@@ -66,10 +81,25 @@ export function ConversationHome() {
       </div>
 
       <div className="mt-auto flex justify-center p-6">
-        <button className="grid h-20 w-20 place-items-center rounded-full border-[3px] border-[#27251f] bg-[#d94f2b] text-[#f4ead7] shadow-[6px_6px_0_#27251f]">
-          REC
-        </button>
+        <RecordButton
+          onClick={() => {
+            setIsRecorderOpen(true);
+          }}
+        />
       </div>
+
+      {isRecorderOpen && (
+        <RecordingOverlay
+          status={recorder.status}
+          error={recorder.error}
+          durationMs={recorder.durationMs}
+          audioUrl={recorder.audio?.url}
+          onStart={recorder.startRecording}
+          onStop={recorder.stopRecording}
+          onReset={recorder.resetRecording}
+          onClose={closeRecorder}
+        />
+      )}
     </div>
   );
 }

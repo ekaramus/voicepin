@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { ConversationHome } from "./ConversationHome";
+import userEvent from "@testing-library/user-event";
 
 describe("ConversationHome", () => {
   it("renders product name", () => {
@@ -25,6 +26,16 @@ describe("ConversationHome", () => {
   it("renders record button", () => {
     render(<ConversationHome />);
 
-    expect(screen.getByRole("button", { name: "REC" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Record" })).toBeInTheDocument();
+});
+
+  it("opens recorder overlay when record button is clicked", async () => {
+    const user = userEvent.setup();
+
+    render(<ConversationHome />);
+
+    await user.click(screen.getByRole("button", { name: "Record" }));
+
+    expect(screen.getByText("Tiny thought")).toBeInTheDocument();
   });
 });
