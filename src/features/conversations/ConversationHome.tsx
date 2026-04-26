@@ -8,11 +8,14 @@ import { RecordButton } from "@/features/recorder/RecordButton";
 import { useAudioRecorder } from "@/features/recorder/useAudioRecorder";
 import { AudioMessageBubble } from "@/features/messages/AudioMessageBubble";
 import type { VoiceMessage } from "@/features/messages/message.types";
+import { ConversationDetail } from "./ConversationDetail";
 
 export function ConversationHome() {
   const [isRecorderOpen, setIsRecorderOpen] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<VoiceMessage[]>([]);  const recorder = useAudioRecorder();
+  const [selectedConversation, setSelectedConversation] =
+  useState<Conversation | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -57,6 +60,15 @@ export function ConversationHome() {
     setIsRecorderOpen(false);
   }
 
+  if (selectedConversation) {
+    return (
+      <ConversationDetail
+        conversation={selectedConversation}
+        onBack={() => setSelectedConversation(null)}
+      />
+    );
+  }
+
   return (
     <div className="relative flex flex-1 flex-col">
       <header className="border-b-2 border-[#27251f] px-5 py-4">
@@ -75,7 +87,11 @@ export function ConversationHome() {
 
       <div>
         {conversations.map((conversation) => (
-          <ConversationRow key={conversation.id} conversation={conversation} />
+          <ConversationRow
+            key={conversation.id}
+            conversation={conversation}
+            onClick={setSelectedConversation}
+          />
         ))}
       </div>
 
