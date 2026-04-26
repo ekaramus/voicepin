@@ -52,6 +52,7 @@ export function ConversationHome() {
 
     draftState.createDraft(recorder.audio);
     setIsRecorderOpen(false);
+    recorder.resetRecording();
   }
 
   function sendDraftToConversation(conversation: Conversation) {

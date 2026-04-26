@@ -20,7 +20,8 @@ export function useDraftSnapshot() {
 
         return {
           id: crypto.randomUUID(),
-          audioUrl: audio.url,
+          blob: audio.blob,
+          audioUrl: URL.createObjectURL(audio.blob),
           durationMs: audio.durationMs,
           createdAt: new Date().toISOString(),
         };

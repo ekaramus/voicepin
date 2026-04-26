@@ -8,6 +8,7 @@ vi.mock("@/features/drafts/useDraftSnapshot", () => ({
   useDraftSnapshot: () => ({
     draft: {
       id: "draft-1",
+      blob: new Blob(["audio"], { type: "audio/webm" }),
       audioUrl: "blob:test-audio",
       durationMs: 8_000,
       createdAt: "2026-04-26T12:00:00.000Z",
