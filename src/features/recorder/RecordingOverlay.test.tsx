@@ -124,4 +124,38 @@ describe("RecordingOverlay", () => {
 
     expect(screen.getByRole("button", { name: /send/i })).toBeInTheDocument();
   });
+
+  it("allows discarding recorded audio and closing the overlay", async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+
+    render(
+      <RecordingOverlay
+        {...defaultProps}
+        status="recorded"
+        durationMs={1_500}
+        audioUrl="blob:test"
+        onClose={onClose}
+      />
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: /discard recording and close/i })
+    );
+
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+  
+  it("explains that close discards the current recording", () => {
+    render(
+      <RecordingOverlay
+        {...defaultProps}
+        status="recorded"
+        durationMs={1_500}
+        audioUrl="blob:test"
+      />
+    );
+
+    expect(screen.getByText(/discard and close/i)).toBeInTheDocument();
+  });
 });

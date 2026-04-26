@@ -41,6 +41,14 @@ export function RecordingOverlay({
 
   return (
     <section className="absolute inset-0 z-50 flex flex-col bg-[#27251f]/95 p-5 text-[#f4ead7]">
+      <button
+        type="button"
+        aria-label="Discard recording and close"
+        onClick={onClose}
+        className="absolute right-5 top-5 grid h-10 w-10 place-items-center rounded-full border-2 border-[#f4ead7] bg-[#3a352c] text-lg font-black text-[#f4ead7] shadow-[3px_3px_0_#0f0e0c]"
+      >
+        ×
+      </button>
       <header className="rounded-3xl border-2 border-[#f4ead7] bg-[#3a352c] p-4 shadow-[6px_6px_0_#0f0e0c]">
         <p className="text-[10px] uppercase tracking-[0.24em] text-[#f7d35f]">
           Recording
@@ -87,7 +95,7 @@ export function RecordingOverlay({
 
         {isRecorded && (
           <p className="text-center text-sm text-[#d7cfbd]">
-            Voice snapshot ready.
+            Voice snapshot ready. Use × to discard and close.
           </p>
         )}
       </div>
