@@ -186,3 +186,46 @@ Testing:
 Decision notes:
 - A repository boundary was introduced before real Supabase queries so the UI will not need major changes when mock data is replaced
 - The “Me” conversation is treated as a first-class conversation type instead of a UI-only special case
+
+### Step 7 — Conversation Detail Flow
+
+- Added selectable conversation rows
+- Added conversation detail screen with header and back navigation
+- Added mock message repository for conversation timelines
+- Displayed audio messages inside conversation detail
+- Connected home screen to conversation detail through local UI state
+
+- Refactored home screen:
+  - removed local “tape” (messages shown outside conversations)
+  - removed message rendering from home
+  - kept home focused on conversation list only
+
+- Scoped recording to conversation detail screen
+
+Testing:
+- Verified conversation rows trigger selection
+- Verified navigation from home to conversation detail
+- Verified back navigation returns to home
+- Verified message repository filters by conversation
+- Verified messages render inside conversation detail
+- Verified recorder overlay works inside conversation screen
+
+Decision notes:
+- Messages are now scoped strictly to conversations instead of being displayed globally
+- Home screen is simplified to a navigation layer (conversation list only)
+- This prepares the app for a future “draft snapshot” flow:
+  - recording can happen globally
+  - user decides where to send the recording after capture
+- Avoided introducing multiple message entry points to keep UX predictable
+
+## Product Direction
+
+VoicePin is evolving toward a capture-first model:
+
+Record → decide where it goes
+
+Instead of:
+
+Choose recipient → then message
+
+This allows faster, more natural voice interactions.
