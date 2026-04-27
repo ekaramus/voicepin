@@ -281,6 +281,23 @@ Decision notes:
 - UI actions reflect user intent depending on context (draft vs direct message)
 - Clean state reset was prioritized to maintain a “single thought” interaction model
 
+### Step 9 — Supabase Storage and Persistence
+
+- Added audio upload to Supabase Storage
+- Added message persistence in database
+- Replaced mock message repository with real data fetching
+- Connected draft flow to real upload and storage pipeline
+
+Testing:
+- Verified audio upload returns public URL
+- Verified message insertion logic
+- Verified message list loads from Supabase
+
+Decision notes:
+- Storage and database are separated for scalability
+- Public URLs are used for MVP simplicity
+- Draft flow now results in real persisted messages
+
 ## Product Direction
 
 VoicePin is evolving toward a capture-first model:
