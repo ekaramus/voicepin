@@ -1,14 +1,91 @@
+const mockSelect = vi.fn();
+const mockEq = vi.fn();
+const mockOrder = vi.fn();
+const mockGetPublicUrl = vi.fn();
+
+vi.mock("@/lib/supabase/client", () => ({
+  createSupabaseBrowserClient: () => ({
+    from: vi.fn(() => ({
+      select: mockSelect,
+    })),
+    storage: {
+      from: vi.fn(() => ({
+        getPublicUrl: mockGetPublicUrl,
+      })),
+    },
+  }),
+}));
+
 import { listMessagesByConversation } from "./message.repository";
 
 describe("listMessagesByConversation", () => {
-  it("returns only messages for the requested conversation", async () => {
-    const messages = await listMessagesByConversation("me");
+  beforeEach(() => {
+    vi.clearAllMocks();
 
-    expect(messages).toHaveLength(1);
-    expect(messages[0].conversationId).toBe("me");
+    mockSelect.mockReturnValue({
+      eq: mockEq,
+    });
+
+    mockEq.mockReturnValue({
+      order: mockOrder,
+    });
+
+    mockGetPublicUrl.mockReturnValue({
+      data: {
+        publicUrl: "https://example.supabase.co/audio.webm",
+      },
+    });
+  });
+
+  it("returns mapped messages for the requested conversation", async () => {
+    mockOrder.mockResolvedValue({
+      data: [
+        {
+          id: "message-1",
+          conversation_id: "me",
+          audio_path: "audio.webm",
+          duration_ms: 8_000,
+          transcript: "Remember to record the demo before lunch.",
+          created_at: "2026-04-26T12:00:00.000Z",
+        },
+      ],
+      error: null,
+    });
+
+    await expect(listMessagesByConversation("me")).resolves.toEqual([
+      {
+        id: "message-1",
+        conversationId: "me",
+        sender: "me",
+        audioUrl: "https://example.supabase.co/audio.webm",
+        durationMs: 8_000,
+        transcript: "Remember to record the demo before lunch.",
+        status: "ready",
+        createdAt: "2026-04-26T12:00:00.000Z",
+      },
+    ]);
+
+    expect(mockEq).toHaveBeenCalledWith("conversation_id", "me");
+    expect(mockOrder).toHaveBeenCalledWith("created_at", { ascending: true });
   });
 
   it("returns an empty array when no messages match", async () => {
+    mockOrder.mockResolvedValue({
+      data: [],
+      error: null,
+    });
+
     await expect(listMessagesByConversation("missing")).resolves.toEqual([]);
+  });
+
+  it("throws when Supabase returns an error", async () => {
+    mockOrder.mockResolvedValue({
+      data: null,
+      error: new Error("Supabase failed"),
+    });
+
+    await expect(listMessagesByConversation("me")).rejects.toThrow(
+      "Supabase failed"
+    );
   });
 });

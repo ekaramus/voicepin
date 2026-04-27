@@ -11,7 +11,8 @@ import { useDraftSnapshot } from "@/features/drafts/useDraftSnapshot";
 import { RecordButton } from "@/features/recorder/RecordButton";
 import { RecordingOverlay } from "@/features/recorder/RecordingOverlay";
 import { useAudioRecorder } from "@/features/recorder/useAudioRecorder";
-import { createMessageFromDraft } from "@/features/messages/createMessageFromDraft";
+import { uploadAudio } from "@/features/messages/uploadAudio";
+import { insertMessage } from "@/features/messages/message.mutations";
 
 export function ConversationHome() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -55,21 +56,25 @@ export function ConversationHome() {
     recorder.resetRecording();
   }
 
-  function sendDraftToConversation(conversation: Conversation) {
+  async function sendDraftToConversation(conversation: Conversation) {
     if (!draftState.draft) {
       return;
     }
 
-    const message = createMessageFromDraft({
-      draft: draftState.draft,
-      conversationId: conversation.id,
-    });
+    try {
+      const { path } = await uploadAudio(draftState.draft.blob);
 
-    // Temporary until Supabase/local repositories are writable.
-    console.log("Draft sent as local message:", message);
+      await insertMessage({
+        conversationId: conversation.id,
+        audioPath: path,
+        durationMs: draftState.draft.durationMs,
+      });
 
-    draftState.clearDraft();
-    setIsDestinationPickerOpen(false);
+      draftState.clearDraft();
+      setIsDestinationPickerOpen(false);
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   if (selectedConversation) {
