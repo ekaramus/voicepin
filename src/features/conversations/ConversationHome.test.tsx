@@ -4,6 +4,21 @@ import { ConversationHome } from "./ConversationHome";
 
 const mockClearDraft = vi.hoisted(() => vi.fn());
 
+vi.mock("@/features/messages/uploadAudio", () => ({
+  uploadAudio: vi.fn(async () => ({
+    path: "audio.webm",
+    publicUrl: "https://example.supabase.co/audio.webm",
+  })),
+}));
+
+vi.mock("@/features/messages/message.mutations", () => ({
+  insertMessage: vi.fn(async () => undefined),
+}));
+
+vi.mock("@/features/messages/message.repository", () => ({
+  listMessagesByConversation: vi.fn(async () => []),
+}));
+
 vi.mock("@/features/drafts/useDraftSnapshot", () => ({
   useDraftSnapshot: () => ({
     draft: {
