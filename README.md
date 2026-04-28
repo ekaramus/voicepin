@@ -300,6 +300,30 @@ Decision notes:
 - Auth-based RLS will replace public MVP policies in the next phase
 - Audio storage and message metadata are kept separate so transcripts can be added later
 
+### Step 10A — Auth Shell
+
+- Added auth domain types for session and user state
+- Added Supabase auth repository for:
+  - reading current session
+  - sending magic link login
+  - signing out
+- Added mobile-first magic link login form
+- Added authenticated app gate
+- Protected the main VoicePin UI behind session detection
+- Added visible signed-in user state and sign-out action
+
+Testing:
+- Verified session mapping from Supabase auth
+- Verified signed-out users see login form
+- Verified signed-in users see app content
+- Verified magic link login form validates email
+- Verified sign-out returns user to login state
+
+Decision notes:
+- Magic link auth was chosen for private beta simplicity
+- Auth shell was added before user-owned data migration to keep the change small and testable
+- Database policies are still MVP-level and will be tightened in the next step
+
 ## Product Direction
 
 VoicePin is evolving toward a capture-first model:
