@@ -328,6 +328,18 @@ Follow-up:
 - Surfaced Supabase magic link errors in the login form
 - Confirmed repeated login attempts may be blocked by Supabase email rate limits rather than app logic
 
+### Step 10A Follow-up — Switch from Magic Link to Google OAuth
+
+- Replaced magic link as the primary login method with Google OAuth
+- Kept the auth gate and session handling unchanged
+- Chose Google OAuth because repeated magic-link testing can hit Supabase email rate limits
+- Improved beta usability by removing email-link friction from the login flow
+
+Decision notes:
+- Google OAuth is the preferred auth method for the private beta
+- Magic link may be reintroduced later as a fallback
+- Facebook login is intentionally out of scope for now because Google is simpler to configure and more useful for a small technical beta
+
 ## Product Direction
 
 VoicePin is evolving toward a capture-first model:
