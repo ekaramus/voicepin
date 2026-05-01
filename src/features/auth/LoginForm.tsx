@@ -8,12 +8,15 @@ export function LoginForm() {
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
     "idle"
   );
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setErrorMessage(null);
 
-    if (!email.includes("@")) {
+    if (!email.includes("@") || !email.includes(".")) {
       setStatus("error");
+      setErrorMessage("Please enter a valid email address.");
       return;
     }
 
@@ -21,8 +24,14 @@ export function LoginForm() {
       setStatus("sending");
       await signInWithMagicLink(email);
       setStatus("sent");
-    } catch {
+    } catch (error) {
       setStatus("error");
+
+      if (error instanceof Error) {
+        setErrorMessage(error.message);
+      } else {
+        setErrorMessage("Could not send login link.");
+      }
     }
   }
 
@@ -75,7 +84,7 @@ export function LoginForm() {
 
         {status === "error" && (
           <p role="alert" className="text-sm leading-6 text-[#d94f2b]">
-            Could not send login link. Check your email and try again.
+            {errorMessage ?? "Could not send login link. Check your email and try again."}
           </p>
         )}
       </form>
