@@ -1,36 +1,24 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { signInWithMagicLink } from "./auth.repository";
+import { useState } from "react";
+import { signInWithGoogle } from "./auth.repository";
 
 export function LoginForm() {
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
-    "idle"
-  );
+  const [status, setStatus] = useState<"idle" | "signing-in" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setErrorMessage(null);
-
-    if (!email.includes("@") || !email.includes(".")) {
-      setStatus("error");
-      setErrorMessage("Please enter a valid email address.");
-      return;
-    }
-
+  async function handleGoogleSignIn() {
     try {
-      setStatus("sending");
-      await signInWithMagicLink(email);
-      setStatus("sent");
+      setStatus("signing-in");
+      setErrorMessage(null);
+      await signInWithGoogle();
     } catch (error) {
       setStatus("error");
 
       if (error instanceof Error) {
         setErrorMessage(error.message);
       } else {
-        setErrorMessage("Could not send login link.");
+        setErrorMessage("Could not start Google sign in.");
       }
     }
   }
@@ -51,43 +39,22 @@ export function LoginForm() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} noValidate className="space-y-3">
-        <label
-          htmlFor="email"
-          className="block text-xs font-black uppercase tracking-[0.16em] text-[#6f6758]"
-        >
-          Email
-        </label>
-
-        <input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          placeholder="you@example.com"
-          className="w-full rounded-2xl border-2 border-[#27251f] bg-[#f4ead7] px-4 py-4 text-sm outline-none shadow-[4px_4px_0_#27251f]"
-        />
-
+      <div className="space-y-3">
         <button
-          type="submit"
-          disabled={status === "sending"}
-          className="w-full rounded-2xl border-2 border-[#27251f] bg-[#d94f2b] px-4 py-4 text-sm font-black uppercase tracking-[0.16em] text-[#f4ead7] shadow-[4px_4px_0_#27251f] disabled:opacity-50"
+          type="button"
+          onClick={handleGoogleSignIn}
+          disabled={status === "signing-in"}
+          className="w-full rounded-2xl border-2 border-[#27251f] bg-[#f4ead7] px-4 py-4 text-sm font-black uppercase tracking-[0.16em] text-[#27251f] shadow-[4px_4px_0_#27251f] disabled:opacity-50"
         >
-          {status === "sending" ? "Sending..." : "Send magic link"}
+          {status === "signing-in" ? "Opening Google..." : "Continue with Google"}
         </button>
-
-        {status === "sent" && (
-          <p className="text-sm leading-6 text-[#6f6758]">
-            Check your email for a login link.
-          </p>
-        )}
 
         {status === "error" && (
           <p role="alert" className="text-sm leading-6 text-[#d94f2b]">
-            {errorMessage ?? "Could not send login link. Check your email and try again."}
+            {errorMessage ?? "Could not start Google sign in."}
           </p>
         )}
-      </form>
+      </div>
     </div>
   );
 }

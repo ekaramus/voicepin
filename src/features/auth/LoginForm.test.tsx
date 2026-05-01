@@ -2,10 +2,10 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { LoginForm } from "./LoginForm";
 
-const mockSignInWithMagicLink = vi.fn();
+const mockSignInWithGoogle = vi.fn();
 
 vi.mock("./auth.repository", () => ({
-  signInWithMagicLink: (email: string) => mockSignInWithMagicLink(email),
+  signInWithGoogle: () => mockSignInWithGoogle(),
 }));
 
 describe("LoginForm", () => {
@@ -13,46 +13,37 @@ describe("LoginForm", () => {
     vi.clearAllMocks();
   });
 
-  it("renders email input", () => {
+  it("renders Google sign in button", () => {
     render(<LoginForm />);
 
-    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /continue with google/i })
+    ).toBeInTheDocument();
   });
 
-  it("sends magic link for valid email", async () => {
+  it("starts Google sign in", async () => {
     const user = userEvent.setup();
-    mockSignInWithMagicLink.mockResolvedValue(undefined);
+    mockSignInWithGoogle.mockResolvedValue(undefined);
 
     render(<LoginForm />);
 
-    await user.type(screen.getByLabelText(/email/i), "test@example.com");
-    await user.click(screen.getByRole("button", { name: /send magic link/i }));
+    await user.click(
+      screen.getByRole("button", { name: /continue with google/i })
+    );
 
-    expect(mockSignInWithMagicLink).toHaveBeenCalledWith("test@example.com");
-    expect(await screen.findByText(/check your email/i)).toBeInTheDocument();
+    expect(mockSignInWithGoogle).toHaveBeenCalledOnce();
   });
 
-  it("shows error for invalid email", async () => {
+  it("shows error when Google sign in fails", async () => {
     const user = userEvent.setup();
+    mockSignInWithGoogle.mockRejectedValue(new Error("Google failed"));
 
     render(<LoginForm />);
 
-    await user.type(screen.getByLabelText(/email/i), "invalid");
-    await user.click(screen.getByRole("button", { name: /send magic link/i }));
+    await user.click(
+      screen.getByRole("button", { name: /continue with google/i })
+    );
 
-    expect(await screen.findByRole("alert")).toBeInTheDocument();
-    expect(mockSignInWithMagicLink).not.toHaveBeenCalled();
-  });
-
-  it("shows error when magic link fails", async () => {
-    const user = userEvent.setup();
-    mockSignInWithMagicLink.mockRejectedValue(new Error("failed"));
-
-    render(<LoginForm />);
-
-    await user.type(screen.getByLabelText(/email/i), "test@example.com");
-    await user.click(screen.getByRole("button", { name: /send magic link/i }));
-
-    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent("Google failed");
   });
 });
