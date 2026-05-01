@@ -38,6 +38,22 @@ export async function signInWithMagicLink(email: string): Promise<void> {
   }
 }
 
+export async function signInWithGoogle(): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo:
+        typeof window === "undefined" ? undefined : window.location.origin,
+    },
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function signOut(): Promise<void> {
   const supabase = createSupabaseBrowserClient();
 
