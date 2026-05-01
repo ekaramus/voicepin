@@ -324,6 +324,10 @@ Decision notes:
 - Auth shell was added before user-owned data migration to keep the change small and testable
 - Database policies are still MVP-level and will be tightened in the next step
 
+Follow-up:
+- Surfaced Supabase magic link errors in the login form
+- Confirmed repeated login attempts may be blocked by Supabase email rate limits rather than app logic
+
 ## Product Direction
 
 VoicePin is evolving toward a capture-first model:
