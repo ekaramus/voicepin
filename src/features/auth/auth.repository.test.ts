@@ -1,12 +1,14 @@
 const mockGetSession = vi.fn();
 const mockSignInWithOtp = vi.fn();
 const mockSignOut = vi.fn();
+const mockSignInWithOAuth = vi.fn();
 
 vi.mock("@/lib/supabase/client", () => ({
   createSupabaseBrowserClient: () => ({
     auth: {
       getSession: mockGetSession,
       signInWithOtp: mockSignInWithOtp,
+      signInWithOAuth: mockSignInWithOAuth,
       signOut: mockSignOut,
     },
   }),
@@ -15,6 +17,7 @@ vi.mock("@/lib/supabase/client", () => ({
 import {
   getCurrentSession,
   signInWithMagicLink,
+  signInWithGoogle,
   signOut,
 } from "./auth.repository";
 
@@ -65,6 +68,27 @@ describe("auth repository", () => {
       },
     });
   });
+
+  it("starts Google OAuth sign in", async () => {
+  mockSignInWithOAuth.mockResolvedValue({ error: null });
+
+  await signInWithGoogle();
+
+  expect(mockSignInWithOAuth).toHaveBeenCalledWith({
+    provider: "google",
+    options: {
+      redirectTo: window.location.origin,
+    },
+  });
+});
+
+it("throws when Google OAuth fails", async () => {
+  mockSignInWithOAuth.mockResolvedValue({
+    error: new Error("Google sign in failed"),
+  });
+
+  await expect(signInWithGoogle()).rejects.toThrow("Google sign in failed");
+});
 
   it("signs out", async () => {
     mockSignOut.mockResolvedValue({ error: null });
