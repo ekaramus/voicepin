@@ -23,10 +23,15 @@ describe("upsertProfile", () => {
       email: "test@example.com",
     });
 
-    expect(mockUpsert).toHaveBeenCalledWith({
-      id: "user-1",
-      email: "test@example.com",
-    });
+    expect(mockUpsert).toHaveBeenCalledWith(
+      {
+        id: "user-1",
+        email: "test@example.com",
+      },
+      {
+        onConflict: "id",
+      }
+    );
   });
 
   it("throws when upsert fails", async () => {

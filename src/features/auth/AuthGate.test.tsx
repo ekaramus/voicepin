@@ -4,20 +4,25 @@ import { AuthGate } from "./AuthGate";
 
 const mockGetCurrentSession = vi.fn();
 const mockSignOut = vi.fn();
+const mockSubscribeToAuthChanges = vi.fn();
 const mockUpsertProfile = vi.fn();
-
-vi.mock("./profile.repository", () => ({
-  upsertProfile: () => mockUpsertProfile(),
-}));
 
 vi.mock("./auth.repository", () => ({
   getCurrentSession: () => mockGetCurrentSession(),
   signOut: () => mockSignOut(),
+  subscribeToAuthChanges: (callback: unknown) =>
+    mockSubscribeToAuthChanges(callback),
+}));
+
+vi.mock("./profile.repository", () => ({
+  upsertProfile: (user: unknown) => mockUpsertProfile(user),
 }));
 
 describe("AuthGate", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+
+    mockSubscribeToAuthChanges.mockReturnValue(() => {});
     mockUpsertProfile.mockResolvedValue(undefined);
   });
 
