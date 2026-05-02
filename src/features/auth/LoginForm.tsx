@@ -13,13 +13,9 @@ export function LoginForm() {
       setErrorMessage(null);
       await signInWithGoogle();
     } catch (error) {
+      console.error("Google login failed:", error);
       setStatus("error");
-
-      if (error instanceof Error) {
-        setErrorMessage(error.message);
-      } else {
-        setErrorMessage("Could not start Google sign in.");
-      }
+      setErrorMessage(error instanceof Error ? error.message : "Could not start Google sign in.");
     }
   }
 

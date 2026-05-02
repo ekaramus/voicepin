@@ -54,6 +54,31 @@ export async function signInWithGoogle(): Promise<void> {
   }
 }
 
+export function subscribeToAuthChanges(
+  callback: (session: AuthSession | null) => void
+) {
+  const supabase = createSupabaseBrowserClient();
+
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange((_event, session) => {
+    callback(
+      session
+        ? {
+            user: {
+              id: session.user.id,
+              email: session.user.email ?? null,
+            },
+          }
+        : null
+    );
+  });
+
+  return () => {
+    subscription.unsubscribe();
+  };
+}
+
 export async function signOut(): Promise<void> {
   const supabase = createSupabaseBrowserClient();
 
