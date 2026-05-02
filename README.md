@@ -381,6 +381,26 @@ Known limitations:
 - Recording inside conversation is still local-only (not persisted yet)
 - Conversation list currently supports only "Me" (no 1:1 yet)
 
+### Step 11 — Persisted Conversation Detail
+
+- Updated conversation detail to load messages from Supabase instead of relying on temporary local-only state
+- Added persisted message mapping from database rows to UI message objects
+- Reloaded conversation messages after direct recording sends
+- Added loading, empty, and error states for conversation timelines
+- Kept direct recording and draft sending on the same persistence path
+
+Testing:
+- Verified persisted message repository maps Supabase rows correctly
+- Verified empty message lists render the empty state
+- Verified load failures render an error state
+- Verified conversation detail requests messages for the selected conversation
+- Verified recorder overlay still opens from conversation detail
+
+Decision notes:
+- Conversation detail now treats Supabase as the source of truth
+- Local optimistic rendering was avoided for now to keep persistence behavior simple and reliable
+- Realtime updates remain out of scope for this step and can be added later
+
 ## Product Direction
 
 VoicePin is evolving toward a capture-first model:
