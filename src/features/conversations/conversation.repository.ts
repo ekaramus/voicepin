@@ -4,25 +4,28 @@ import { sortConversations } from "./sortConversations";
 import type { Conversation } from "./conversation.types";
 import { getOrCreateSelfConversation } from "./selfConversation.repository";
 
+type ConversationRow = {
+  id: string;
+  type: "self" | "direct";
+  created_at: string;
+};
+
 type MembershipRow = {
   conversation_id: string;
-  conversations:
-    | {
-        id: string;
-        type: "self" | "direct";
-        created_at: string;
-      }
-    | {
-        id: string;
-        type: "self" | "direct";
-        created_at: string;
-      }[]
-    | null;
+  conversations: ConversationRow | ConversationRow[] | null;
+};
+
+type MemberRow = {
+  user_id: string;
+};
+
+type ProfileRow = {
+  email: string | null;
 };
 
 function normalizeConversation(
   value: MembershipRow["conversations"]
-): { id: string; type: "self" | "direct"; created_at: string } | null {
+): ConversationRow | null {
   if (Array.isArray(value)) {
     return value[0] ?? null;
   }
@@ -30,7 +33,11 @@ function normalizeConversation(
   return value;
 }
 
-async function getDirectConversationName(
+function getInitials(value: string) {
+  return value.slice(0, 2).toUpperCase();
+}
+
+async function getDirectConversationLabel(
   conversationId: string,
   currentUserId: string
 ): Promise<{ name: string; initials: string }> {
@@ -45,7 +52,9 @@ async function getDirectConversationName(
     throw membersError;
   }
 
-  const otherMember = members?.find((member) => member.user_id !== currentUserId);
+  const otherMember = ((members ?? []) as MemberRow[]).find(
+    (member) => member.user_id !== currentUserId
+  );
 
   if (!otherMember) {
     return {
@@ -60,16 +69,18 @@ async function getDirectConversationName(
     .eq("id", otherMember.user_id)
     .single();
 
-  if (profileError || !profile?.email) {
+  if (profileError || !(profile as ProfileRow | null)?.email) {
     return {
       name: "Friend",
       initials: "FR",
     };
   }
 
+  const email = (profile as ProfileRow).email ?? "Friend";
+
   return {
-    name: profile.email,
-    initials: profile.email.slice(0, 2).toUpperCase(),
+    name: email,
+    initials: getInitials(email),
   };
 }
 
@@ -97,13 +108,13 @@ export async function listConversations(): Promise<Conversation[]> {
       continue;
     }
 
-    const friend = await getDirectConversationName(conversation.id, user.id);
+    const label = await getDirectConversationLabel(conversation.id, user.id);
 
     directConversations.push({
       id: conversation.id,
       type: "direct",
-      name: friend.name,
-      initials: friend.initials,
+      name: label.name,
+      initials: label.initials,
       preview: "Short thoughts only",
       durationMs: 0,
       isPinned: false,
