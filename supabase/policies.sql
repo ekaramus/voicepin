@@ -22,6 +22,9 @@ drop policy if exists "Users can insert conversations" on conversations;
 drop policy if exists "Users can read messages in own conversations" on messages;
 drop policy if exists "Users can insert messages in own conversations" on messages;
 
+drop policy if exists "Authenticated users can find profiles by email" on profiles;
+drop policy if exists "Users can add members to conversations they created" on conversation_members;
+
 -- Profiles
 
 create policy "Users can read own profile"
@@ -35,6 +38,27 @@ on profiles
 for insert
 to authenticated
 with check (id = auth.uid());
+
+-- Authenticated users
+
+create policy "Authenticated users can find profiles by email"
+on profiles
+for select
+to authenticated
+using (true);
+
+create policy "Users can add members to conversations they created"
+on conversation_members
+for insert
+to authenticated
+with check (
+  exists (
+    select 1
+    from conversations
+    where conversations.id = conversation_members.conversation_id
+    and conversations.created_by = auth.uid()
+  )
+);
 
 -- Conversation members
 
