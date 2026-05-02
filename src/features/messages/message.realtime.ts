@@ -27,9 +27,7 @@ export function subscribeToConversationMessages({
         table: "messages",
         filter: `conversation_id=eq.${conversationId}`,
       },
-      (_payload: MessageChangePayload) => {
-        onMessageChange();
-      }
+      () => {onMessageChange();}
     )
     .subscribe();
 
