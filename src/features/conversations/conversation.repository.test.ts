@@ -1,5 +1,6 @@
 const mockGetRequiredUser = vi.fn();
 const mockGetOrCreateSelfConversation = vi.fn();
+const mockEq = vi.fn();
 
 vi.mock("@/features/auth/getRequiredUser", () => ({
   getRequiredUser: () => mockGetRequiredUser(),
@@ -10,14 +11,22 @@ vi.mock("./selfConversation.repository", () => ({
     mockGetOrCreateSelfConversation(user),
 }));
 
+vi.mock("@/lib/supabase/client", () => ({
+  createSupabaseBrowserClient: () => ({
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: mockEq,
+      })),
+    })),
+  }),
+}));
+
 import { listConversations } from "./conversation.repository";
 
 describe("listConversations", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
 
-  it("returns self conversation for current user", async () => {
     mockGetRequiredUser.mockResolvedValue({
       id: "user-1",
       email: "test@example.com",
@@ -34,6 +43,13 @@ describe("listConversations", () => {
       updatedAt: "2026-04-26T12:00:00.000Z",
     });
 
+    mockEq.mockResolvedValue({
+      data: [],
+      error: null,
+    });
+  });
+
+  it("returns self conversation for current user", async () => {
     const conversations = await listConversations();
 
     expect(conversations[0].name).toBe("Me");
