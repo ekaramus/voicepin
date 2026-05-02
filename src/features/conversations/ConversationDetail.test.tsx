@@ -6,6 +6,12 @@ import type { Conversation } from "./conversation.types";
 const mockListMessagesByConversation = vi.fn();
 const mockUploadAudio = vi.fn();
 const mockInsertMessage = vi.fn();
+const mockSubscribeToConversationMessages = vi.fn();
+
+vi.mock("@/features/messages/message.realtime", () => ({
+  subscribeToConversationMessages: (input: unknown) =>
+    mockSubscribeToConversationMessages(input),
+}));
 
 vi.mock("@/features/messages/message.repository", () => ({
   listMessagesByConversation: (conversationId: string) =>
@@ -34,6 +40,7 @@ const conversation: Conversation = {
 describe("ConversationDetail", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSubscribeToConversationMessages.mockReturnValue(() => {});
 
     mockListMessagesByConversation.mockResolvedValue([
       {
@@ -125,5 +132,28 @@ describe("ConversationDetail", () => {
     );
 
     expect(onBack).toHaveBeenCalledOnce();
+  });
+
+  it("subscribes to realtime message changes", async () => {
+    render(<ConversationDetail conversation={conversation} onBack={() => {}} />);
+
+    await screen.findByText("Remember to record the demo before lunch.");
+
+    expect(mockSubscribeToConversationMessages).toHaveBeenCalledWith({
+      conversationId: "conversation-1",
+      onMessageChange: expect.any(Function),
+    });
+  });
+  
+  it("reloads messages when realtime change is received", async () => {
+    render(<ConversationDetail conversation={conversation} onBack={() => {}} />);
+
+    await screen.findByText("Remember to record the demo before lunch.");
+
+    const subscriptionInput = mockSubscribeToConversationMessages.mock.calls[0][0];
+
+    await subscriptionInput.onMessageChange();
+
+    expect(mockListMessagesByConversation).toHaveBeenCalledTimes(2);
   });
 });
