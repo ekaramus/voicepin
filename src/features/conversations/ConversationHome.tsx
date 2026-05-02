@@ -13,6 +13,7 @@ import { RecordingOverlay } from "@/features/recorder/RecordingOverlay";
 import { useAudioRecorder } from "@/features/recorder/useAudioRecorder";
 import { uploadAudio } from "@/features/messages/uploadAudio";
 import { insertMessage } from "@/features/messages/message.mutations";
+import { AddFriendForm } from "./AddFriendForm";
 
 export function ConversationHome() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -84,6 +85,20 @@ export function ConversationHome() {
     }
   }
 
+  function handleConversationReady(conversation: Conversation) {
+    setConversations((current) => {
+      const exists = current.some((item) => item.id === conversation.id);
+
+      if (exists) {
+        return current;
+      }
+
+      return [...current, conversation];
+    });
+
+    setSelectedConversation(conversation);
+  }
+
   if (selectedConversation) {
     return (
       <ConversationDetail
@@ -126,6 +141,8 @@ export function ConversationHome() {
       <div className="mt-auto flex justify-center p-6">
         <RecordButton onClick={() => setIsRecorderOpen(true)} />
       </div>
+
+      <AddFriendForm onConversationReady={handleConversationReady} />
 
       {draftState.draft && (
         <DraftBar
