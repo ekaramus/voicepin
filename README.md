@@ -401,6 +401,26 @@ Decision notes:
 - Local optimistic rendering was avoided for now to keep persistence behavior simple and reliable
 - Realtime updates remain out of scope for this step and can be added later
 
+### Step 12 — Direct Conversations
+
+- Added profile upsert after login so users can be found by email
+- Added direct conversation creation by exact email
+- Added conversation membership for both users
+- Updated RLS to allow authenticated users to find profiles and create direct memberships
+- Added Add Friend form to the home screen
+- Updated conversation list to include direct conversations
+
+Testing:
+- Verified profile upsert
+- Verified direct conversation repository creates or returns conversations
+- Verified home can open a newly created direct conversation
+- Manually verified two signed-in users can share a conversation
+
+Decision notes:
+- Exact-email lookup was chosen for MVP simplicity
+- Public authenticated profile lookup is acceptable for private beta, but should be replaced later with invite codes or usernames
+- Groups, public search, and pending invites remain out of scope
+
 ## Product Direction
 
 VoicePin is evolving toward a capture-first model:
