@@ -24,24 +24,50 @@ export function ConversationDetail({
   const [messages, setMessages] = useState<VoiceMessage[]>([]);
   const [isRecorderOpen, setIsRecorderOpen] = useState(false);
   const recorder = useAudioRecorder();
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
 
-  useEffect(() => {
-    let isMounted = true;
+useEffect(() => {
+  let isMounted = true;
 
-    async function loadMessages() {
+  async function load() {
+    try {
+      setStatus("loading");
+
       const data = await listMessagesByConversation(conversation.id);
 
       if (isMounted) {
         setMessages(data);
+        setStatus("ready");
+      }
+    } catch (error) {
+      console.error("Failed to load messages:", error);
+
+      if (isMounted) {
+        setStatus("error");
       }
     }
+  }
 
-    void loadMessages();
+  void load();
 
-    return () => {
-      isMounted = false;
-    };
-  }, [conversation.id]);
+  return () => {
+    isMounted = false;
+  };
+}, [conversation.id]);
+
+  async function loadMessages() {
+    try {
+      setStatus("loading");
+
+      const data = await listMessagesByConversation(conversation.id);
+
+      setMessages(data);
+      setStatus("ready");
+    } catch (error) {
+      console.error("Failed to load messages:", error);
+      setStatus("error");
+    }
+  }
 
   function closeRecorder() {
     setIsRecorderOpen(false);
@@ -54,7 +80,7 @@ export function ConversationDetail({
     }
 
     try {
-      const { path, publicUrl } = await uploadAudio(recorder.audio.blob);
+      const { path } = await uploadAudio(recorder.audio.blob);
 
       await insertMessage({
         conversationId: conversation.id,
@@ -62,20 +88,12 @@ export function ConversationDetail({
         durationMs: recorder.audio.durationMs,
       });
 
-      const message: VoiceMessage = {
-        id: crypto.randomUUID(),
-        conversationId: conversation.id,
-        sender: "me",
-        audioUrl: publicUrl,
-        durationMs: recorder.audio.durationMs,
-        transcript: null,
-        status: "local",
-        createdAt: new Date().toISOString(),
-      };
-
-      setMessages((currentMessages) => [...currentMessages, message]);
       setIsRecorderOpen(false);
       recorder.resetRecording();
+
+      const data = await listMessagesByConversation(conversation.id);
+      setMessages(data);
+      setStatus("ready");
     } catch (error) {
       console.error("Failed to send direct message:", error);
     }
@@ -86,22 +104,28 @@ export function ConversationDetail({
       <ConversationHeader conversation={conversation} onBack={onBack} />
 
       <main className="flex-1 space-y-5 overflow-y-auto bg-[linear-gradient(#eadfc9_1px,transparent_1px)] bg-[length:100%_34px] px-4 py-5 pb-32">
-        <div className="rounded-2xl border-2 border-[#27251f] bg-[#f4ead7] p-3 text-center text-xs uppercase tracking-[0.14em] text-[#6f6758] shadow-[3px_3px_0_#27251f]">
-          {conversation.type === "self"
-            ? "private voice memories"
-            : "short thoughts only"}{" "}
-          · 20s max
-        </div>
+        {status === "loading" && (
+          <div className="rounded-[22px] border-2 border-dashed border-[#27251f] bg-[#f4ead7] p-5 text-center text-sm text-[#6f6758]">
+            Loading voice snapshots...
+          </div>
+        )}
 
-        {messages.length === 0 ? (
+        {status === "error" && (
+          <div role="alert" className="rounded-[22px] border-2 border-[#27251f] bg-[#f4ead7] p-5 text-center text-sm text-[#d94f2b]">
+            Could not load voice snapshots.
+          </div>
+        )}
+
+        {status === "ready" && messages.length === 0 && (
           <div className="rounded-[22px] border-2 border-dashed border-[#27251f] bg-[#f4ead7] p-5 text-center text-sm text-[#6f6758]">
             No voice snapshots yet.
           </div>
-        ) : (
+        )}
+
+        {status === "ready" &&
           messages.map((message) => (
             <AudioMessageBubble key={message.id} message={message} />
-          ))
-        )}
+          ))}
       </main>
 
       <div className="absolute inset-x-0 bottom-6 flex justify-center">
