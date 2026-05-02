@@ -63,6 +63,10 @@ vi.mock("@/features/drafts/useDraftSnapshot", () => ({
   }),
 }));
 
+vi.mock("@/features/messages/message.realtime", () => ({
+  subscribeToConversationMessages: vi.fn(() => () => {}),
+}));
+
 describe("ConversationHome", () => {
   beforeEach(() => {
     mockClearDraft.mockClear();
@@ -87,7 +91,11 @@ describe("ConversationHome", () => {
 
     await user.click(await screen.findByRole("button", { name: /Me/i }));
 
-    expect(screen.getByRole("heading", { name: "Me" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Me" })
+    ).toBeInTheDocument();
+
+    expect(await screen.findByText(/private tape/i)).toBeInTheDocument();
   });
 
   it("opens recorder overlay from home", async () => {
