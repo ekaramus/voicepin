@@ -340,6 +340,47 @@ Decision notes:
 - Magic link may be reintroduced later as a fallback
 - Facebook login is intentionally out of scope for now because Google is simpler to configure and more useful for a small technical beta
 
+### Step 10B — User-owned Data Model and RLS (Fixes & Stabilization)
+
+Follow-up fixes after initial RLS implementation:
+
+- Fixed self conversation not appearing in destination picker under RLS
+- Introduced `created_by` field on conversations to allow safe creation + visibility
+- Ensured self conversation is always readable by its owner immediately after creation
+- Fixed missing membership causing message insert failures
+- Resolved storage RLS blocking authenticated uploads
+- Updated storage policies to allow authenticated users to upload and read voice messages
+- Fixed conversation picker showing empty state despite existing self conversation
+- Normalized Supabase nested relation (`conversations`) handling in repository
+- Aligned `messages.conversation_id` to UUID type for proper relational integrity
+- Ensured draft sending pipeline works end-to-end:
+  - upload → insert → clear draft → UI update
+
+UX fixes:
+
+- Fixed inability to send draft to "Me" conversation
+- Added empty state handling in destination picker
+- Improved reliability of draft → send flow
+
+Technical decisions:
+
+- Conversations now include `created_by` to simplify RLS logic
+- Membership + ownership model used together for access control
+- Storage access limited to authenticated users (public reads optional)
+- Self conversation is lazily created per user
+
+Testing:
+
+- Verified draft sending works under RLS constraints
+- Verified authenticated upload + insert pipeline
+- Verified self conversation appears correctly in picker
+- Verified no cross-user data access
+
+Known limitations:
+
+- Recording inside conversation is still local-only (not persisted yet)
+- Conversation list currently supports only "Me" (no 1:1 yet)
+
 ## Product Direction
 
 VoicePin is evolving toward a capture-first model:
