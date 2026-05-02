@@ -9,6 +9,8 @@ import { RecordingOverlay } from "@/features/recorder/RecordingOverlay";
 import { useAudioRecorder } from "@/features/recorder/useAudioRecorder";
 import { ConversationHeader } from "./ConversationHeader";
 import type { Conversation } from "./conversation.types";
+import { uploadAudio } from "@/features/messages/uploadAudio";
+import { insertMessage } from "@/features/messages/message.mutations";
 
 type ConversationDetailProps = {
   conversation: Conversation;
@@ -46,24 +48,37 @@ export function ConversationDetail({
     recorder.resetRecording();
   }
 
-  function sendLocalMessage() {
+  async function sendLocalMessage() {
     if (!recorder.audio) {
       return;
     }
 
-    const message: VoiceMessage = {
-      id: crypto.randomUUID(),
-      conversationId: conversation.id,
-      sender: "me",
-      audioUrl: recorder.audio.url,
-      durationMs: recorder.audio.durationMs,
-      transcript: null,
-      status: "local",
-      createdAt: new Date().toISOString(),
-    };
+    try {
+      const { path, publicUrl } = await uploadAudio(recorder.audio.blob);
 
-    setMessages((currentMessages) => [...currentMessages, message]);
-    setIsRecorderOpen(false);
+      await insertMessage({
+        conversationId: conversation.id,
+        audioPath: path,
+        durationMs: recorder.audio.durationMs,
+      });
+
+      const message: VoiceMessage = {
+        id: crypto.randomUUID(),
+        conversationId: conversation.id,
+        sender: "me",
+        audioUrl: publicUrl,
+        durationMs: recorder.audio.durationMs,
+        transcript: null,
+        status: "local",
+        createdAt: new Date().toISOString(),
+      };
+
+      setMessages((currentMessages) => [...currentMessages, message]);
+      setIsRecorderOpen(false);
+      recorder.resetRecording();
+    } catch (error) {
+      console.error("Failed to send direct message:", error);
+    }
   }
 
   return (

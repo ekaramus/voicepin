@@ -24,6 +24,17 @@ vi.mock("@/features/messages/message.repository", () => ({
   }),
 }));
 
+vi.mock("@/features/messages/uploadAudio", () => ({
+  uploadAudio: vi.fn(async () => ({
+    path: "audio.webm",
+    publicUrl: "https://example.supabase.co/audio.webm",
+  })),
+}));
+
+vi.mock("@/features/messages/message.mutations", () => ({
+  insertMessage: vi.fn(async () => undefined),
+}));
+
 const conversation: Conversation = {
   id: "me",
   type: "self",
