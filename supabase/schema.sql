@@ -11,6 +11,7 @@ create table if not exists profiles (
 create table if not exists conversations (
   id uuid primary key default gen_random_uuid(),
   type text not null check (type in ('self', 'direct')),
+  created_by uuid references auth.users(id) on delete cascade,
   created_at timestamptz default now()
 );
 

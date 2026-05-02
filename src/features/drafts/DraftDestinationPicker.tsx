@@ -30,7 +30,14 @@ export function DraftDestinationPicker({
       </header>
 
       <div className="mt-5 flex-1 overflow-y-auto">
-        {conversations.map((conversation) => (
+        
+        {
+        conversations.length === 0 ?
+        (<p className="rounded-2xl border-2 border-[#f4ead7] p-4 text-sm text-[#d7cfbd]">
+          No conversations available. Refresh and try again.
+        </p>) 
+        :
+        (conversations.map((conversation) => (
           <button
             key={conversation.id}
             type="button"
@@ -55,7 +62,8 @@ export function DraftDestinationPicker({
               </span>
             </span>
           </button>
-        ))}
+        )))
+        }
       </div>
 
       <button

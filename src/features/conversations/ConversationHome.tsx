@@ -57,12 +57,17 @@ export function ConversationHome() {
   }
 
   async function sendDraftToConversation(conversation: Conversation) {
+    console.log("Sending draft to conversation:", conversation);
+
     if (!draftState.draft) {
+      console.warn("No draft available");
       return;
     }
 
     try {
       const { path } = await uploadAudio(draftState.draft.blob);
+
+      console.log("Uploaded audio:", path);
 
       await insertMessage({
         conversationId: conversation.id,
@@ -70,10 +75,12 @@ export function ConversationHome() {
         durationMs: draftState.draft.durationMs,
       });
 
+      console.log("Inserted message");
+
       draftState.clearDraft();
       setIsDestinationPickerOpen(false);
     } catch (error) {
-      console.error(error);
+      console.error("Failed to send draft:", error);
     }
   }
 

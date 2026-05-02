@@ -39,13 +39,20 @@ export async function getOrCreateSelfConversation(
     (membership) => membership.conversations?.type === "self"
   );
 
-  if (existingSelf?.conversations) {
-    return mapSelfConversation(existingSelf.conversations);
+  const existingSelfConversation = Array.isArray(existingSelf?.conversations)
+    ? existingSelf.conversations[0]
+    : existingSelf?.conversations;
+
+  if (existingSelfConversation) {
+    return mapSelfConversation(existingSelfConversation);
   }
 
   const { data: conversation, error: conversationError } = await supabase
     .from("conversations")
-    .insert({ type: "self" })
+    .insert({
+      type: "self",
+      created_by: user.id,
+    })
     .select("id, type, created_at")
     .single();
 
