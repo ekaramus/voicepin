@@ -7,30 +7,32 @@ type ProfileRow = {
   email: string | null;
 };
 
-type MembershipRow = {
-  conversation_id: string;
-  conversations:
-    | {
-        id: string;
-        type: "self" | "direct";
-        created_at: string;
-      }
-    | {
-        id: string;
-        type: "self" | "direct";
-        created_at: string;
-      }[]
-    | null;
+type ExistingConversationRow = {
+  id: string;
+  type: "self" | "direct";
+  created_at: string;
 };
 
-function normalizeConversation(
-  value: MembershipRow["conversations"]
-): { id: string; type: "self" | "direct"; created_at: string } | null {
-  if (Array.isArray(value)) {
-    return value[0] ?? null;
-  }
+function createDirectPairKey(userA: string, userB: string) {
+  return [userA, userB].sort().join(":");
+}
 
-  return value;
+function mapDirectConversation(
+  conversation: ExistingConversationRow,
+  friend: ProfileRow
+): Conversation {
+  const email = friend.email ?? "Friend";
+
+  return {
+    id: conversation.id,
+    type: "direct",
+    name: email,
+    initials: email.slice(0, 2).toUpperCase(),
+    preview: "Short thoughts only",
+    durationMs: 0,
+    isPinned: false,
+    updatedAt: conversation.created_at,
+  };
 }
 
 export async function createOrGetDirectConversationByEmail(
@@ -41,7 +43,11 @@ export async function createOrGetDirectConversationByEmail(
 
   const normalizedEmail = email.trim().toLowerCase();
 
-  if (!normalizedEmail || normalizedEmail === currentUser.email?.toLowerCase()) {
+  if (!normalizedEmail) {
+    throw new Error("Email is required");
+  }
+
+  if (normalizedEmail === currentUser.email?.toLowerCase()) {
     throw new Error("Choose another user's email");
   }
 
@@ -56,50 +62,21 @@ export async function createOrGetDirectConversationByEmail(
   }
 
   const friend = profile as ProfileRow;
+  const directPairKey = createDirectPairKey(currentUser.id, friend.id);
 
-  const { data: memberships, error: membershipsError } = await supabase
-    .from("conversation_members")
-    .select("conversation_id, conversations(id, type, created_at)")
-    .eq("user_id", currentUser.id);
+  const { data: existingDirect, error: existingDirectError } = await supabase
+    .from("conversations")
+    .select("id, type, created_at")
+    .eq("type", "direct")
+    .eq("direct_pair_key", directPairKey)
+    .maybeSingle();
 
-  if (membershipsError) {
-    throw membershipsError;
+  if (existingDirectError) {
+    throw existingDirectError;
   }
 
-  for (const membership of (memberships ?? []) as MembershipRow[]) {
-    const conversation = normalizeConversation(membership.conversations);
-
-    if (!conversation || conversation.type !== "direct") {
-      continue;
-    }
-
-    const { data: members, error: membersError } = await supabase
-      .from("conversation_members")
-      .select("user_id")
-      .eq("conversation_id", conversation.id);
-
-    if (membersError) {
-      throw membersError;
-    }
-
-    const memberIds = (members ?? []).map((member) => member.user_id);
-
-    if (
-      memberIds.includes(currentUser.id) &&
-      memberIds.includes(friend.id) &&
-      memberIds.length === 2
-    ) {
-      return {
-        id: conversation.id,
-        type: "direct",
-        name: friend.email ?? "Friend",
-        initials: (friend.email ?? "FR").slice(0, 2).toUpperCase(),
-        preview: "Short thoughts only",
-        durationMs: 0,
-        isPinned: false,
-        updatedAt: conversation.created_at,
-      };
-    }
+  if (existingDirect) {
+    return mapDirectConversation(existingDirect as ExistingConversationRow, friend);
   }
 
   const { data: conversation, error: conversationError } = await supabase
@@ -107,6 +84,7 @@ export async function createOrGetDirectConversationByEmail(
     .insert({
       type: "direct",
       created_by: currentUser.id,
+      direct_pair_key: directPairKey,
     })
     .select("id, type, created_at")
     .single();
@@ -132,14 +110,5 @@ export async function createOrGetDirectConversationByEmail(
     throw insertMembersError;
   }
 
-  return {
-    id: conversation.id,
-    type: "direct",
-    name: friend.email ?? "Friend",
-    initials: (friend.email ?? "FR").slice(0, 2).toUpperCase(),
-    preview: "Short thoughts only",
-    durationMs: 0,
-    isPinned: false,
-    updatedAt: conversation.created_at,
-  };
+  return mapDirectConversation(conversation as ExistingConversationRow, friend);
 }
