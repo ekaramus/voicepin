@@ -1,8 +1,11 @@
 "use client";
 
 import { ReactNode, useEffect, useState } from "react";
-import { getCurrentSession, signOut } from "./auth.repository";
-import type { AuthSession } from "./auth.types";
+import {
+  getCurrentSession,
+  signOut,
+  subscribeToAuthChanges,
+} from "./auth.repository";import type { AuthSession } from "./auth.types";
 import { LoginForm } from "./LoginForm";
 import { upsertProfile } from "./profile.repository";
 
@@ -22,14 +25,20 @@ export function AuthGate({ children }: AuthGateProps) {
         const currentSession = await getCurrentSession();
 
         if (currentSession) {
-          await upsertProfile(currentSession.user);
+          try {
+            await upsertProfile(currentSession.user);
+          } catch (error) {
+            console.error("Failed to upsert profile:", error);
+          }
         }
 
         if (isMounted) {
           setSession(currentSession);
           setStatus("ready");
         }
-      } catch {
+      } catch (error) {
+        console.error("Failed to load auth session:", error);
+
         if (isMounted) {
           setSession(null);
           setStatus("ready");
@@ -39,8 +48,18 @@ export function AuthGate({ children }: AuthGateProps) {
 
     void loadSession();
 
+    const unsubscribe = subscribeToAuthChanges(async (nextSession) => {
+      if (nextSession) {
+        await upsertProfile(nextSession.user);
+      }
+
+      setSession(nextSession);
+      setStatus("ready");
+    });
+
     return () => {
       isMounted = false;
+      unsubscribe();
     };
   }, []);
 
