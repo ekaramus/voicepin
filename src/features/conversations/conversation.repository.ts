@@ -1,7 +1,12 @@
-import { mockConversations } from "./conversation.mock";
 import { sortConversations } from "./sortConversations";
 import type { Conversation } from "./conversation.types";
+import { getRequiredUser } from "@/features/auth/getRequiredUser";
+import { getOrCreateSelfConversation } from "./selfConversation.repository";
 
 export async function listConversations(): Promise<Conversation[]> {
-  return sortConversations(mockConversations);
+  const user = await getRequiredUser();
+
+  const selfConversation = await getOrCreateSelfConversation(user);
+
+  return sortConversations([selfConversation]);
 }
