@@ -1,42 +1,27 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ConversationDetail } from "./ConversationDetail";
 import type { Conversation } from "./conversation.types";
 
-vi.mock("@/features/messages/message.repository", () => ({
-  listMessagesByConversation: vi.fn(async (conversationId: string) => {
-    if (conversationId === "me") {
-      return [
-        {
-          id: "message-1",
-          conversationId: "me",
-          sender: "me",
-          audioUrl: "blob:test-audio",
-          durationMs: 8_000,
-          transcript: "Remember to record the demo before lunch.",
-          status: "ready",
-          createdAt: "2026-04-26T12:00:00.000Z",
-        },
-      ];
-    }
+const mockListMessagesByConversation = vi.fn();
+const mockUploadAudio = vi.fn();
+const mockInsertMessage = vi.fn();
 
-    return [];
-  }),
+vi.mock("@/features/messages/message.repository", () => ({
+  listMessagesByConversation: (conversationId: string) =>
+    mockListMessagesByConversation(conversationId),
 }));
 
 vi.mock("@/features/messages/uploadAudio", () => ({
-  uploadAudio: vi.fn(async () => ({
-    path: "audio.webm",
-    publicUrl: "https://example.supabase.co/audio.webm",
-  })),
+  uploadAudio: (blob: Blob) => mockUploadAudio(blob),
 }));
 
 vi.mock("@/features/messages/message.mutations", () => ({
-  insertMessage: vi.fn(async () => undefined),
+  insertMessage: (input: unknown) => mockInsertMessage(input),
 }));
 
 const conversation: Conversation = {
-  id: "me",
+  id: "conversation-1",
   type: "self",
   name: "Me",
   initials: "ME",
@@ -47,26 +32,80 @@ const conversation: Conversation = {
 };
 
 describe("ConversationDetail", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mockListMessagesByConversation.mockResolvedValue([
+      {
+        id: "message-1",
+        conversationId: "conversation-1",
+        sender: "me",
+        audioUrl: "blob:test-audio",
+        durationMs: 8_000,
+        transcript: "Remember to record the demo before lunch.",
+        status: "ready",
+        createdAt: "2026-04-26T12:00:00.000Z",
+      },
+    ]);
+
+    mockUploadAudio.mockResolvedValue({
+      path: "audio.webm",
+      publicUrl: "https://example.supabase.co/audio.webm",
+    });
+
+    mockInsertMessage.mockResolvedValue(undefined);
+  });
+
   it("renders selected conversation", async () => {
     render(<ConversationDetail conversation={conversation} onBack={() => {}} />);
 
     expect(screen.getByRole("heading", { name: "Me" })).toBeInTheDocument();
-
-    await screen.findByText("Remember to record the demo before lunch.");
-  });
-
-  it("loads messages for selected conversation", async () => {
-    render(<ConversationDetail conversation={conversation} onBack={() => {}} />);
 
     expect(
       await screen.findByText("Remember to record the demo before lunch.")
     ).toBeInTheDocument();
   });
 
+  it("loads messages for selected conversation", async () => {
+    render(<ConversationDetail conversation={conversation} onBack={() => {}} />);
+
+    await waitFor(() => {
+      expect(mockListMessagesByConversation).toHaveBeenCalledWith(
+        "conversation-1"
+      );
+    });
+
+    expect(
+      await screen.findByText("Remember to record the demo before lunch.")
+    ).toBeInTheDocument();
+  });
+
+  it("shows empty state when there are no messages", async () => {
+    mockListMessagesByConversation.mockResolvedValue([]);
+
+    render(<ConversationDetail conversation={conversation} onBack={() => {}} />);
+
+    expect(
+      await screen.findByText(/No voice snapshots yet/i)
+    ).toBeInTheDocument();
+  });
+
+  it("shows error state when messages fail to load", async () => {
+    mockListMessagesByConversation.mockRejectedValue(new Error("Failed"));
+
+    render(<ConversationDetail conversation={conversation} onBack={() => {}} />);
+
+    expect(
+      await screen.findByRole("alert")
+    ).toHaveTextContent(/could not load voice snapshots/i);
+  });
+
   it("opens recorder overlay from detail screen", async () => {
     const user = userEvent.setup();
 
     render(<ConversationDetail conversation={conversation} onBack={() => {}} />);
+
+    await screen.findByText("Remember to record the demo before lunch.");
 
     await user.click(screen.getByRole("button", { name: "Record" }));
 
@@ -79,7 +118,11 @@ describe("ConversationDetail", () => {
 
     render(<ConversationDetail conversation={conversation} onBack={onBack} />);
 
-    await user.click(screen.getByRole("button", { name: /back to conversations/i }));
+    await screen.findByText("Remember to record the demo before lunch.");
+
+    await user.click(
+      screen.getByRole("button", { name: /back to conversations/i })
+    );
 
     expect(onBack).toHaveBeenCalledOnce();
   });
