@@ -1,8 +1,37 @@
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render, screen, waitFor } from "@testing-library/react";import userEvent from "@testing-library/user-event";
 import { ConversationHome } from "./ConversationHome";
 
+vi.mock("./conversation.repository", () => ({
+  listConversations: vi.fn(async () => [
+    {
+      id: "11111111-1111-1111-1111-111111111111",
+      type: "self",
+      name: "Me",
+      initials: "ME",
+      preview: "Private voice memories",
+      durationMs: 0,
+      isPinned: true,
+      updatedAt: "2026-04-26T12:00:00.000Z",
+    },
+  ]),
+}));
+
 const mockClearDraft = vi.hoisted(() => vi.fn());
+
+vi.mock("@/features/drafts/useDraftSnapshot", () => ({
+  useDraftSnapshot: () => ({
+    draft: {
+      id: "draft-1",
+      blob: new Blob(["audio"], { type: "audio/webm" }),
+      audioUrl: "blob:test-audio",
+      durationMs: 8_000,
+      createdAt: "2026-04-26T12:00:00.000Z",
+    },
+    hasDraft: true,
+    createDraft: vi.fn(),
+    clearDraft: mockClearDraft,
+  }),
+}));
 
 vi.mock("@/features/messages/uploadAudio", () => ({
   uploadAudio: vi.fn(async () => ({
@@ -56,11 +85,9 @@ describe("ConversationHome", () => {
 
     render(<ConversationHome />);
 
-    await user.click(await screen.findByText("Me"));
+    await user.click(await screen.findByRole("button", { name: /Me/i }));
 
-    expect(
-      screen.getByRole("heading", { name: "Me" })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Me" })).toBeInTheDocument();
   });
 
   it("opens recorder overlay from home", async () => {
@@ -84,6 +111,8 @@ describe("ConversationHome", () => {
       await screen.findByRole("button", { name: /send to me/i })
     );
 
-    expect(mockClearDraft).toHaveBeenCalledOnce();
+    await waitFor(() => {
+      expect(mockClearDraft).toHaveBeenCalledOnce();
+    });
   });
 });
