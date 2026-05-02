@@ -1,10 +1,28 @@
+-- Enable RLS
+
 alter table profiles enable row level security;
 alter table conversations enable row level security;
 alter table conversation_members enable row level security;
 alter table messages enable row level security;
 
+-- Clean old policies (MVP/public)
+
 drop policy if exists "Allow public message inserts for MVP" on messages;
 drop policy if exists "Allow public message reads for MVP" on messages;
+
+drop policy if exists "Users can read own profile" on profiles;
+drop policy if exists "Users can insert own profile" on profiles;
+
+drop policy if exists "Users can read own memberships" on conversation_members;
+drop policy if exists "Users can insert own memberships" on conversation_members;
+
+drop policy if exists "Users can read conversations they belong to" on conversations;
+drop policy if exists "Users can insert conversations" on conversations;
+
+drop policy if exists "Users can read messages in own conversations" on messages;
+drop policy if exists "Users can insert messages in own conversations" on messages;
+
+-- Profiles
 
 create policy "Users can read own profile"
 on profiles
@@ -18,6 +36,8 @@ for insert
 to authenticated
 with check (id = auth.uid());
 
+-- Conversation members
+
 create policy "Users can read own memberships"
 on conversation_members
 for select
@@ -30,12 +50,15 @@ for insert
 to authenticated
 with check (user_id = auth.uid());
 
-create policy "Users can read conversations they belong to"
+-- Conversations (IMPORTANT: created_by)
+
+create policy "Users can read conversations they own or belong to"
 on conversations
 for select
 to authenticated
 using (
-  exists (
+  created_by = auth.uid()
+  or exists (
     select 1
     from conversation_members
     where conversation_members.conversation_id = conversations.id
@@ -43,11 +66,13 @@ using (
   )
 );
 
-create policy "Users can insert conversations"
+create policy "Users can insert own conversations"
 on conversations
 for insert
 to authenticated
-with check (true);
+with check (created_by = auth.uid());
+
+-- Messages
 
 create policy "Users can read messages in own conversations"
 on messages
@@ -57,7 +82,7 @@ using (
   exists (
     select 1
     from conversation_members
-    where conversation_members.conversation_id = messages.conversation_id::uuid
+    where conversation_members.conversation_id = messages.conversation_id
     and conversation_members.user_id = auth.uid()
   )
 );
@@ -71,7 +96,32 @@ with check (
   and exists (
     select 1
     from conversation_members
-    where conversation_members.conversation_id = messages.conversation_id::uuid
+    where conversation_members.conversation_id = messages.conversation_id
     and conversation_members.user_id = auth.uid()
   )
 );
+
+-- STORAGE (voice messages)
+
+drop policy if exists "Allow public uploads to voice messages" on storage.objects;
+drop policy if exists "Allow public reads from voice messages" on storage.objects;
+
+create policy "Authenticated users can upload voice messages"
+on storage.objects
+for insert
+to authenticated
+with check (bucket_id = 'voice-messages');
+
+create policy "Authenticated users can read voice messages"
+on storage.objects
+for select
+to authenticated
+using (bucket_id = 'voice-messages');
+
+-- Optional (if bucket is public)
+
+create policy "Public can read voice messages"
+on storage.objects
+for select
+to anon
+using (bucket_id = 'voice-messages');
