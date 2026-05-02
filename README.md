@@ -421,6 +421,15 @@ Decision notes:
 - Public authenticated profile lookup is acceptable for private beta, but should be replaced later with invite codes or usernames
 - Groups, public search, and pending invites remain out of scope
 
+Follow-up:
+- Fixed direct conversations falling back to “Friend” after reload
+- Updated conversation loading to resolve the other member’s profile email
+- Kept email display as the MVP identifier until usernames or contact names are introduced
+
+Testing:
+- Verified direct conversations display the other user’s email
+- Verified fallback behavior when profile lookup fails
+
 ## Product Direction
 
 VoicePin is evolving toward a capture-first model:
