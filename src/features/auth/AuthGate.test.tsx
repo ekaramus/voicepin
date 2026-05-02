@@ -4,6 +4,11 @@ import { AuthGate } from "./AuthGate";
 
 const mockGetCurrentSession = vi.fn();
 const mockSignOut = vi.fn();
+const mockUpsertProfile = vi.fn();
+
+vi.mock("./profile.repository", () => ({
+  upsertProfile: () => mockUpsertProfile(),
+}));
 
 vi.mock("./auth.repository", () => ({
   getCurrentSession: () => mockGetCurrentSession(),
@@ -13,6 +18,7 @@ vi.mock("./auth.repository", () => ({
 describe("AuthGate", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUpsertProfile.mockResolvedValue(undefined);
   });
 
   it("shows loading state first", () => {
@@ -38,6 +44,25 @@ describe("AuthGate", () => {
 
     expect(await screen.findByText(/private beta/i)).toBeInTheDocument();
     expect(screen.queryByText("App content")).not.toBeInTheDocument();
+  });
+
+  it("upserts profile when user is signed in", async () => {
+    mockGetCurrentSession.mockResolvedValue({
+      user: {
+        id: "user-1",
+        email: "test@example.com",
+      },
+    });
+
+    render(
+      <AuthGate>
+        <p>App content</p>
+      </AuthGate>
+    );
+
+    await screen.findByText("App content");
+
+    expect(mockUpsertProfile).toHaveBeenCalledOnce();
   });
 
   it("shows app content when user is signed in", async () => {

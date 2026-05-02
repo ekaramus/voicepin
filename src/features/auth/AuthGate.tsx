@@ -4,6 +4,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { getCurrentSession, signOut } from "./auth.repository";
 import type { AuthSession } from "./auth.types";
 import { LoginForm } from "./LoginForm";
+import { upsertProfile } from "./profile.repository";
 
 type AuthGateProps = {
   children: ReactNode;
@@ -19,6 +20,10 @@ export function AuthGate({ children }: AuthGateProps) {
     async function loadSession() {
       try {
         const currentSession = await getCurrentSession();
+
+        if (currentSession) {
+          await upsertProfile(currentSession.user);
+        }
 
         if (isMounted) {
           setSession(currentSession);
