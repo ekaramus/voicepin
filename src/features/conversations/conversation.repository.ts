@@ -30,6 +30,49 @@ function normalizeConversation(
   return value;
 }
 
+async function getDirectConversationName(
+  conversationId: string,
+  currentUserId: string
+): Promise<{ name: string; initials: string }> {
+  const supabase = createSupabaseBrowserClient();
+
+  const { data: members, error: membersError } = await supabase
+    .from("conversation_members")
+    .select("user_id")
+    .eq("conversation_id", conversationId);
+
+  if (membersError) {
+    throw membersError;
+  }
+
+  const otherMember = members?.find((member) => member.user_id !== currentUserId);
+
+  if (!otherMember) {
+    return {
+      name: "Friend",
+      initials: "FR",
+    };
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("email")
+    .eq("id", otherMember.user_id)
+    .single();
+
+  if (profileError || !profile?.email) {
+    return {
+      name: "Friend",
+      initials: "FR",
+    };
+  }
+
+  return {
+    name: profile.email,
+    initials: profile.email.slice(0, 2).toUpperCase(),
+  };
+}
+
 export async function listConversations(): Promise<Conversation[]> {
   const supabase = createSupabaseBrowserClient();
   const user = await getRequiredUser();
@@ -54,11 +97,13 @@ export async function listConversations(): Promise<Conversation[]> {
       continue;
     }
 
+    const friend = await getDirectConversationName(conversation.id, user.id);
+
     directConversations.push({
       id: conversation.id,
       type: "direct",
-      name: "Friend",
-      initials: "FR",
+      name: friend.name,
+      initials: friend.initials,
       preview: "Short thoughts only",
       durationMs: 0,
       isPinned: false,
