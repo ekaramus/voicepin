@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AudioMessageBubble } from "@/features/messages/AudioMessageBubble";
 import { listMessagesByConversation } from "@/features/messages/message.repository";
 import type { VoiceMessage } from "@/features/messages/message.types";
@@ -11,6 +11,7 @@ import { ConversationHeader } from "./ConversationHeader";
 import type { Conversation } from "./conversation.types";
 import { uploadAudio } from "@/features/messages/uploadAudio";
 import { insertMessage } from "@/features/messages/message.mutations";
+import { subscribeToConversationMessages } from "@/features/messages/message.realtime";
 
 type ConversationDetailProps = {
   conversation: Conversation;
@@ -26,36 +27,7 @@ export function ConversationDetail({
   const recorder = useAudioRecorder();
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
 
-useEffect(() => {
-  let isMounted = true;
-
-  async function load() {
-    try {
-      setStatus("loading");
-
-      const data = await listMessagesByConversation(conversation.id);
-
-      if (isMounted) {
-        setMessages(data);
-        setStatus("ready");
-      }
-    } catch (error) {
-      console.error("Failed to load messages:", error);
-
-      if (isMounted) {
-        setStatus("error");
-      }
-    }
-  }
-
-  void load();
-
-  return () => {
-    isMounted = false;
-  };
-}, [conversation.id]);
-
-  async function loadMessages() {
+  const loadMessages = useCallback(async () => {
     try {
       setStatus("loading");
 
@@ -67,7 +39,22 @@ useEffect(() => {
       console.error("Failed to load messages:", error);
       setStatus("error");
     }
-  }
+  }, [conversation.id]);
+
+  useEffect(() => {
+    void loadMessages();
+  }, [loadMessages]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToConversationMessages({
+      conversationId: conversation.id,
+      onMessageChange: () => {
+        void loadMessages();
+      },
+    });
+
+    return unsubscribe;
+  }, [conversation.id, loadMessages]);
 
   function closeRecorder() {
     setIsRecorderOpen(false);
@@ -91,9 +78,7 @@ useEffect(() => {
       setIsRecorderOpen(false);
       recorder.resetRecording();
 
-      const data = await listMessagesByConversation(conversation.id);
-      setMessages(data);
-      setStatus("ready");
+      await loadMessages();
     } catch (error) {
       console.error("Failed to send direct message:", error);
     }
