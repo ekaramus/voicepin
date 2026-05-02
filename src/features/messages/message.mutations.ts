@@ -1,3 +1,4 @@
+import { getRequiredUser } from "@/features/auth/getRequiredUser";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type InsertMessageInput = {
@@ -12,9 +13,11 @@ export async function insertMessage({
   durationMs,
 }: InsertMessageInput) {
   const supabase = createSupabaseBrowserClient();
+  const user = await getRequiredUser();
 
   const { error } = await supabase.from("messages").insert({
     conversation_id: conversationId,
+    sender_id: user.id,
     audio_path: audioPath,
     duration_ms: durationMs,
   });
