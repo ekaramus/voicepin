@@ -2,8 +2,8 @@ const mockGetRequiredUser = vi.fn();
 const mockGetOrCreateSelfConversation = vi.fn();
 
 const mockConversationMembershipEq = vi.fn();
-const mockMemberEq = vi.fn();
 const mockProfileSingle = vi.fn();
+const mockMessageMaybeSingle = vi.fn();
 
 vi.mock("@/features/auth/getRequiredUser", () => ({
   getRequiredUser: () => mockGetRequiredUser(),
@@ -21,20 +21,17 @@ vi.mock("@/lib/supabase/client", () => ({
         return {
           select: (query: string) => {
             if (
-              query === "conversation_id, conversations(id, type, created_at)"
+              query ===
+              "conversation_id, conversations(id, type, created_at, direct_pair_key)"
             ) {
               return {
                 eq: mockConversationMembershipEq,
               };
             }
 
-            if (query === "user_id") {
-              return {
-                eq: mockMemberEq,
-              };
-            }
-
-            throw new Error(`Unexpected conversation_members query: ${query}`);
+            throw new Error(
+              `Unexpected conversation_members query: ${query}`
+            );
           },
         };
       }
@@ -52,6 +49,20 @@ vi.mock("@/lib/supabase/client", () => ({
               }),
             };
           },
+        };
+      }
+
+      if (table === "messages") {
+        return {
+          select: () => ({
+            eq: () => ({
+              order: () => ({
+                limit: () => ({
+                  maybeSingle: mockMessageMaybeSingle,
+                }),
+              }),
+            }),
+          }),
         };
       }
 
@@ -87,12 +98,12 @@ describe("listConversations", () => {
       error: null,
     });
 
-    mockMemberEq.mockResolvedValue({
-      data: [],
+    mockProfileSingle.mockResolvedValue({
+      data: null,
       error: null,
     });
 
-    mockProfileSingle.mockResolvedValue({
+    mockMessageMaybeSingle.mockResolvedValue({
       data: null,
       error: null,
     });
@@ -108,30 +119,21 @@ describe("listConversations", () => {
         name: "Me",
       })
     );
-
-    expect(mockGetOrCreateSelfConversation).toHaveBeenCalledWith({
-      id: "user-1",
-      email: "me@example.com",
-    });
   });
 
-  it("shows friend email for direct conversations", async () => {
+  it("shows friend email for direct conversations using pair key", async () => {
     mockConversationMembershipEq.mockResolvedValue({
       data: [
         {
-          conversation_id: "direct-conversation",
+          conversation_id: "direct-1",
           conversations: {
-            id: "direct-conversation",
+            id: "direct-1",
             type: "direct",
             created_at: "2026-04-26T13:00:00.000Z",
+            direct_pair_key: "user-1:friend-1",
           },
         },
       ],
-      error: null,
-    });
-
-    mockMemberEq.mockResolvedValue({
-      data: [{ user_id: "user-1" }, { user_id: "friend-1" }],
       error: null,
     });
 
@@ -147,8 +149,7 @@ describe("listConversations", () => {
     expect(conversations).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          id: "direct-conversation",
-          type: "direct",
+          id: "direct-1",
           name: "friend@example.com",
           initials: "FR",
         }),
@@ -156,23 +157,19 @@ describe("listConversations", () => {
     );
   });
 
-  it("falls back to Friend when direct conversation has no other member", async () => {
+  it("falls back to Friend when pair key is missing", async () => {
     mockConversationMembershipEq.mockResolvedValue({
       data: [
         {
-          conversation_id: "direct-conversation",
+          conversation_id: "direct-1",
           conversations: {
-            id: "direct-conversation",
+            id: "direct-1",
             type: "direct",
             created_at: "2026-04-26T13:00:00.000Z",
+            direct_pair_key: null,
           },
         },
       ],
-      error: null,
-    });
-
-    mockMemberEq.mockResolvedValue({
-      data: [{ user_id: "user-1" }],
       error: null,
     });
 
@@ -181,7 +178,6 @@ describe("listConversations", () => {
     expect(conversations).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          id: "direct-conversation",
           name: "Friend",
           initials: "FR",
         }),
@@ -189,41 +185,40 @@ describe("listConversations", () => {
     );
   });
 
-  it("falls back to Friend when profile lookup fails", async () => {
-    mockConversationMembershipEq.mockResolvedValue({
-      data: [
-        {
-          conversation_id: "direct-conversation",
-          conversations: {
-            id: "direct-conversation",
-            type: "direct",
-            created_at: "2026-04-26T13:00:00.000Z",
-          },
-        },
-      ],
+  it("uses latest message as preview", async () => {
+    mockMessageMaybeSingle.mockResolvedValue({
+      data: {
+        transcript: "Latest voice note",
+        duration_ms: 6000,
+        created_at: "2026-04-26T14:00:00.000Z",
+      },
       error: null,
-    });
-
-    mockMemberEq.mockResolvedValue({
-      data: [{ user_id: "user-1" }, { user_id: "friend-1" }],
-      error: null,
-    });
-
-    mockProfileSingle.mockResolvedValue({
-      data: null,
-      error: new Error("Profile missing"),
     });
 
     const conversations = await listConversations();
 
-    expect(conversations).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          id: "direct-conversation",
-          name: "Friend",
-          initials: "FR",
-        }),
-      ])
+    expect(conversations[0]).toEqual(
+      expect.objectContaining({
+        preview: "Latest voice note",
+        durationMs: 6000,
+        updatedAt: "2026-04-26T14:00:00.000Z",
+      })
+    );
+  });
+
+  it("uses fallback preview when no messages exist", async () => {
+    mockMessageMaybeSingle.mockResolvedValue({
+      data: null,
+      error: null,
+    });
+
+    const conversations = await listConversations();
+
+    expect(conversations[0]).toEqual(
+      expect.objectContaining({
+        preview: "No voice snapshots yet",
+        durationMs: 0,
+      })
     );
   });
 
@@ -236,28 +231,5 @@ describe("listConversations", () => {
     await expect(listConversations()).rejects.toThrow(
       "Membership load failed"
     );
-  });
-
-  it("throws when direct conversation members cannot be loaded", async () => {
-    mockConversationMembershipEq.mockResolvedValue({
-      data: [
-        {
-          conversation_id: "direct-conversation",
-          conversations: {
-            id: "direct-conversation",
-            type: "direct",
-            created_at: "2026-04-26T13:00:00.000Z",
-          },
-        },
-      ],
-      error: null,
-    });
-
-    mockMemberEq.mockResolvedValue({
-      data: null,
-      error: new Error("Members load failed"),
-    });
-
-    await expect(listConversations()).rejects.toThrow("Members load failed");
   });
 });
