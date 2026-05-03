@@ -45,7 +45,7 @@ describe("DraftDestinationPicker", () => {
       />
     );
 
-    expect(screen.getByRole("heading", { name: /send where/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /send to/i })).toBeInTheDocument();
   });
 
   it("renders conversations", () => {

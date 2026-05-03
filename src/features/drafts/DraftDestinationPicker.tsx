@@ -56,6 +56,7 @@ export function DraftDestinationPicker({
             <button
               key={conversation.id}
               type="button"
+              aria-label={`Send draft to ${conversation.name}`}
               onClick={() => onSelect(conversation)}
               disabled={sendStatus === "sending"}
               className="flex w-full items-center justify-between rounded-2xl border-2 border-[#27251f] bg-[#f4ead7] px-4 py-4 text-left shadow-[4px_4px_0_#27251f] disabled:opacity-50"

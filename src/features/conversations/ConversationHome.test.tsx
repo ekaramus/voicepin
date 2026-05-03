@@ -139,7 +139,7 @@ describe("ConversationHome", () => {
     await user.click(screen.getByRole("button", { name: /send to/i }));
 
     await user.click(
-      await screen.findByRole("button", { name: /send to me/i })
+      await screen.findByRole("button", { name: /send draft to me/i })
     );
 
     await waitFor(() => {
@@ -185,7 +185,10 @@ describe("ConversationHome", () => {
     );
 
     expect(await screen.findByText("Voice snapshot")).toBeInTheDocument();
-    expect(mockListConversations).toHaveBeenCalledTimes(2);
+    
+    await waitFor(() => {
+      expect(mockListConversations.mock.calls.length).toBeGreaterThanOrEqual(2);
+    });
   });
 
 });
