@@ -27,7 +27,7 @@ export function ConversationHome() {
   useEffect(() => {
     let isMounted = true;
 
-    async function loadConversations() {
+    async function load() {
       const data = await listConversations();
 
       if (isMounted) {
@@ -35,12 +35,22 @@ export function ConversationHome() {
       }
     }
 
-    void loadConversations();
+    void load();
 
     return () => {
       isMounted = false;
     };
   }, []);
+
+  async function refreshConversations() {
+    const data = await listConversations();
+    setConversations(data);
+  }
+
+  function handleBackToConversations() {
+    setSelectedConversation(null);
+    void refreshConversations();
+  }
 
   function closeRecorder() {
     setIsRecorderOpen(false);
@@ -103,8 +113,7 @@ export function ConversationHome() {
     return (
       <ConversationDetail
         conversation={selectedConversation}
-        onBack={() => setSelectedConversation(null)}
-      />
+        onBack={handleBackToConversations}      />
     );
   }
 
