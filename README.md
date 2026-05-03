@@ -460,6 +460,27 @@ Testing:
 - Verified fallback to “Friend” only occurs when profile is missing
 - Verified conversation list remains stable across reloads
 
+### Step 13 — Last Message Preview and Activity Sorting
+
+- Added latest message lookup for conversations
+- Updated conversation previews to reflect the newest voice snapshot
+- Updated conversation duration to show the latest message duration
+- Updated conversation `updatedAt` based on latest message activity
+- Refreshed conversation list when returning from conversation detail
+- Kept fallback preview for conversations without messages
+
+Testing:
+- Verified conversations use latest message as preview
+- Verified fallback preview is used when no messages exist
+- Verified conversation list refreshes after returning from detail view
+- Verified updated previews appear without full page reload
+
+Decision notes:
+- Conversation list now reflects real activity instead of static placeholder text
+- Explicit refresh on navigation was chosen over realtime list updates for simplicity
+- Missing transcripts fall back to “Voice snapshot” until transcription is added
+- Full conversation metadata denormalization is intentionally deferred
+
 ## Product Direction
 
 VoicePin is evolving toward a capture-first model:
