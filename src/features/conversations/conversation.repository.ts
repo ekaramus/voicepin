@@ -8,15 +8,12 @@ type ConversationRow = {
   id: string;
   type: "self" | "direct";
   created_at: string;
+  direct_pair_key: string | null;
 };
 
 type MembershipRow = {
   conversation_id: string;
   conversations: ConversationRow | ConversationRow[] | null;
-};
-
-type MemberRow = {
-  user_id: string;
 };
 
 type ProfileRow = {
@@ -37,39 +34,36 @@ function getInitials(value: string) {
   return value.slice(0, 2).toUpperCase();
 }
 
-async function getDirectConversationLabel(
-  conversationId: string,
+async function getDirectConversationLabelFromPairKey(
+  directPairKey: string | null,
   currentUserId: string
 ): Promise<{ name: string; initials: string }> {
-  const supabase = createSupabaseBrowserClient();
-
-  const { data: members, error: membersError } = await supabase
-    .from("conversation_members")
-    .select("user_id")
-    .eq("conversation_id", conversationId);
-
-  if (membersError) {
-    throw membersError;
-  }
-
-  const otherMember = ((members ?? []) as MemberRow[]).find(
-    (member) => member.user_id !== currentUserId
-  );
-
-  if (!otherMember) {
+  if (!directPairKey) {
     return {
       name: "Friend",
       initials: "FR",
     };
   }
 
-  const { data: profile, error: profileError } = await supabase
+  const [userA, userB] = directPairKey.split(":");
+  const otherUserId = userA === currentUserId ? userB : userA;
+
+  if (!otherUserId) {
+    return {
+      name: "Friend",
+      initials: "FR",
+    };
+  }
+
+  const supabase = createSupabaseBrowserClient();
+
+  const { data: profile, error } = await supabase
     .from("profiles")
     .select("email")
-    .eq("id", otherMember.user_id)
+    .eq("id", otherUserId)
     .single();
 
-  if (profileError || !(profile as ProfileRow | null)?.email) {
+  if (error || !(profile as ProfileRow | null)?.email) {
     return {
       name: "Friend",
       initials: "FR",
@@ -92,7 +86,7 @@ export async function listConversations(): Promise<Conversation[]> {
 
   const { data, error } = await supabase
     .from("conversation_members")
-    .select("conversation_id, conversations(id, type, created_at)")
+    .select("conversation_id, conversations(id, type, created_at, direct_pair_key)")
     .eq("user_id", user.id);
 
   if (error) {
@@ -108,7 +102,10 @@ export async function listConversations(): Promise<Conversation[]> {
       continue;
     }
 
-    const label = await getDirectConversationLabel(conversation.id, user.id);
+    const label = await getDirectConversationLabelFromPairKey(
+      conversation.direct_pair_key,
+      user.id
+    );
 
     directConversations.push({
       id: conversation.id,
