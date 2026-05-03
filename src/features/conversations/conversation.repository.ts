@@ -34,25 +34,22 @@ function getInitials(value: string) {
   return value.slice(0, 2).toUpperCase();
 }
 
+/**
+ * Resolve other user using direct_pair_key
+ */
 async function getDirectConversationLabelFromPairKey(
   directPairKey: string | null,
   currentUserId: string
 ): Promise<{ name: string; initials: string }> {
   if (!directPairKey) {
-    return {
-      name: "Friend",
-      initials: "FR",
-    };
+    return { name: "Friend", initials: "FR" };
   }
 
   const [userA, userB] = directPairKey.split(":");
   const otherUserId = userA === currentUserId ? userB : userA;
 
   if (!otherUserId) {
-    return {
-      name: "Friend",
-      initials: "FR",
-    };
+    return { name: "Friend", initials: "FR" };
   }
 
   const supabase = createSupabaseBrowserClient();
@@ -64,10 +61,7 @@ async function getDirectConversationLabelFromPairKey(
     .single();
 
   if (error || !(profile as ProfileRow | null)?.email) {
-    return {
-      name: "Friend",
-      initials: "FR",
-    };
+    return { name: "Friend", initials: "FR" };
   }
 
   const email = (profile as ProfileRow).email ?? "Friend";
@@ -75,6 +69,42 @@ async function getDirectConversationLabelFromPairKey(
   return {
     name: email,
     initials: getInitials(email),
+  };
+}
+
+/**
+ * Get latest message preview + activity timestamp
+ */
+async function getConversationPreview(
+  conversationId: string,
+  fallbackUpdatedAt: string
+): Promise<{
+  preview: string;
+  durationMs: number;
+  updatedAt: string;
+}> {
+  const supabase = createSupabaseBrowserClient();
+
+  const { data, error } = await supabase
+    .from("messages")
+    .select("transcript, duration_ms, created_at")
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) {
+    return {
+      preview: "No voice snapshots yet",
+      durationMs: 0,
+      updatedAt: fallbackUpdatedAt,
+    };
+  }
+
+  return {
+    preview: data.transcript ?? "Voice snapshot",
+    durationMs: data.duration_ms,
+    updatedAt: data.created_at,
   };
 }
 
@@ -86,7 +116,9 @@ export async function listConversations(): Promise<Conversation[]> {
 
   const { data, error } = await supabase
     .from("conversation_members")
-    .select("conversation_id, conversations(id, type, created_at, direct_pair_key)")
+    .select(
+      "conversation_id, conversations(id, type, created_at, direct_pair_key)"
+    )
     .eq("user_id", user.id);
 
   if (error) {
@@ -107,17 +139,40 @@ export async function listConversations(): Promise<Conversation[]> {
       user.id
     );
 
+    const preview = await getConversationPreview(
+      conversation.id,
+      conversation.created_at
+    );
+
     directConversations.push({
       id: conversation.id,
       type: "direct",
       name: label.name,
       initials: label.initials,
-      preview: "Short thoughts only",
-      durationMs: 0,
+      preview: preview.preview,
+      durationMs: preview.durationMs,
       isPinned: false,
-      updatedAt: conversation.created_at,
+      updatedAt: preview.updatedAt,
     });
   }
 
-  return sortConversations([selfConversation, ...directConversations]);
+  /**
+   * Hydrate self conversation preview
+   */
+  const selfPreview = await getConversationPreview(
+    selfConversation.id,
+    selfConversation.updatedAt
+  );
+
+  const hydratedSelfConversation: Conversation = {
+    ...selfConversation,
+    preview: selfPreview.preview,
+    durationMs: selfPreview.durationMs,
+    updatedAt: selfPreview.updatedAt,
+  };
+
+  return sortConversations([
+    hydratedSelfConversation,
+    ...directConversations,
+  ]);
 }
