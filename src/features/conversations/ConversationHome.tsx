@@ -185,6 +185,8 @@ export function ConversationHome() {
           conversations={conversations}
           onSelect={sendDraftToConversation}
           onCancel={() => setIsDestinationPickerOpen(false)}
+          sendStatus={draftSendStatus}
+          sendError={draftSendError}
         />
       )}
     </div>

@@ -1,12 +1,15 @@
+"use client";
+
 import type { Conversation } from "@/features/conversations/conversation.types";
 import type { DraftVoiceSnapshot } from "./draft.types";
-import { formatDuration } from "@/features/messages/formatDuration";
 
 type DraftDestinationPickerProps = {
   draft: DraftVoiceSnapshot;
   conversations: Conversation[];
   onSelect: (conversation: Conversation) => void;
   onCancel: () => void;
+  sendStatus?: "idle" | "sending" | "error";
+  sendError?: string | null;
 };
 
 export function DraftDestinationPicker({
@@ -14,65 +17,66 @@ export function DraftDestinationPicker({
   conversations,
   onSelect,
   onCancel,
+  sendStatus = "idle",
+  sendError = null,
 }: DraftDestinationPickerProps) {
   return (
-    <section className="absolute inset-0 z-50 flex flex-col bg-[#27251f]/95 p-5 text-[#f4ead7]">
-      <header className="rounded-3xl border-2 border-[#f4ead7] bg-[#3a352c] p-4 shadow-[6px_6px_0_#0f0e0c]">
-        <p className="text-[10px] uppercase tracking-[0.24em] text-[#f7d35f]">
-          Draft snapshot
-        </p>
-        <h2 className="mt-2 text-3xl font-black tracking-[-0.08em]">
-          Send where?
+    <div className="fixed inset-0 z-20 flex flex-col bg-[#eadfc9]">
+      <header className="flex items-center justify-between border-b-2 border-[#27251f] px-5 py-4">
+        <h2 className="text-lg font-black tracking-[-0.08em]">
+          Send to
         </h2>
-        <p className="mt-2 text-sm text-[#d7cfbd]">
-          {formatDuration(draft.durationMs)} voice snapshot
-        </p>
+
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={sendStatus === "sending"}
+          className="text-xs font-black uppercase tracking-[0.12em] text-[#d94f2b] disabled:opacity-50"
+        >
+          Cancel
+        </button>
       </header>
 
-      <div className="mt-5 flex-1 overflow-y-auto">
-        
-        {
-        conversations.length === 0 ?
-        (<p className="rounded-2xl border-2 border-[#f4ead7] p-4 text-sm text-[#d7cfbd]">
-          No conversations available. Refresh and try again.
-        </p>) 
-        :
-        (conversations.map((conversation) => (
-          <button
-            key={conversation.id}
-            type="button"
-            aria-label={`Send to ${conversation.name}`}
-            onClick={() => onSelect(conversation)}
-            className="mb-3 flex w-full items-center gap-3 rounded-2xl border-2 border-[#f4ead7] bg-[#f4ead7] p-4 text-left text-[#27251f] shadow-[4px_4px_0_#0f0e0c]"
+      <div className="flex-1 overflow-y-auto px-5 py-4">
+        <div className="mb-4 text-sm text-[#6f6758]">
+          {Math.round(draft.durationMs / 1000)}s voice snapshot
+        </div>
+
+        {sendStatus === "error" && sendError && (
+          <p
+            role="alert"
+            className="mb-4 rounded-2xl border-2 border-[#27251f] bg-[#f4ead7] p-3 text-sm text-[#d94f2b]"
           >
-            <span
-              className={
-                conversation.type === "self"
-                  ? "grid h-12 w-12 place-items-center rounded-2xl border-2 border-[#27251f] bg-[#f7d35f] text-sm font-black"
-                  : "grid h-12 w-12 place-items-center rounded-2xl border-2 border-[#27251f] bg-[#b8d8c0] text-sm font-black"
-              }
+            {sendError}
+          </p>
+        )}
+
+        <div className="space-y-3">
+          {conversations.map((conversation) => (
+            <button
+              key={conversation.id}
+              type="button"
+              onClick={() => onSelect(conversation)}
+              disabled={sendStatus === "sending"}
+              className="flex w-full items-center justify-between rounded-2xl border-2 border-[#27251f] bg-[#f4ead7] px-4 py-4 text-left shadow-[4px_4px_0_#27251f] disabled:opacity-50"
             >
-              {conversation.initials}
-            </span>
+              <div>
+                <p className="text-sm font-black tracking-[-0.04em]">
+                  {conversation.name}
+                </p>
 
-            <span>
-              <span className="block font-black">{conversation.name}</span>
-              <span className="text-xs uppercase tracking-[0.14em] text-[#6f6758]">
-                {conversation.type === "self" ? "Private tape" : "1:1"}
+                <p className="mt-1 text-xs text-[#6f6758]">
+                  {conversation.preview}
+                </p>
+              </div>
+
+              <span className="ml-4 text-xs font-black uppercase tracking-[0.12em] text-[#d94f2b]">
+                {sendStatus === "sending" ? "Sending..." : "Send"}
               </span>
-            </span>
-          </button>
-        )))
-        }
+            </button>
+          ))}
+        </div>
       </div>
-
-      <button
-        type="button"
-        onClick={onCancel}
-        className="rounded-2xl border-2 border-[#f4ead7] px-4 py-4 text-sm font-black uppercase tracking-[0.16em]"
-      >
-        Cancel
-      </button>
-    </section>
+    </div>
   );
 }
