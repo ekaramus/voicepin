@@ -97,4 +97,33 @@ describe("DraftDestinationPicker", () => {
 
     expect(onCancel).toHaveBeenCalledOnce();
   });
+
+  it("shows sending state", () => {
+    render(
+      <DraftDestinationPicker
+        draft={draft}
+        conversations={conversations}
+        onSelect={() => {}}
+        onCancel={() => {}}
+        sendStatus="sending"
+      />
+    );
+
+    expect(screen.getAllByText(/sending/i)[0]).toBeInTheDocument();
+  });
+
+  it("shows send error", () => {
+    render(
+      <DraftDestinationPicker
+        draft={draft}
+        conversations={conversations}
+        onSelect={() => {}}
+        onCancel={() => {}}
+        sendStatus="error"
+        sendError="Upload failed"
+      />
+    );
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Upload failed");
+  });
 });
