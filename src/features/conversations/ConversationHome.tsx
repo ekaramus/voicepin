@@ -17,11 +17,12 @@ import { AddFriendForm } from "./AddFriendForm";
 
 export function ConversationHome() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversation, setSelectedConversation] =
-    useState<Conversation | null>(null);
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [isRecorderOpen, setIsRecorderOpen] = useState(false);
   const [isDestinationPickerOpen, setIsDestinationPickerOpen] = useState(false);
   const draftState = useDraftSnapshot();
+  const [draftSendStatus, setDraftSendStatus] = useState<"idle" | "sending" | "error">("idle");
+  const [draftSendError, setDraftSendError] = useState<string | null>(null);
   const recorder = useAudioRecorder();
 
   useEffect(() => {
@@ -68,17 +69,15 @@ export function ConversationHome() {
   }
 
   async function sendDraftToConversation(conversation: Conversation) {
-    console.log("Sending draft to conversation:", conversation);
-
-    if (!draftState.draft) {
-      console.warn("No draft available");
+    if (!draftState.draft || draftSendStatus === "sending") {
       return;
     }
 
     try {
-      const { path } = await uploadAudio(draftState.draft.blob);
+      setDraftSendStatus("sending");
+      setDraftSendError(null);
 
-      console.log("Uploaded audio:", path);
+      const { path } = await uploadAudio(draftState.draft.blob);
 
       await insertMessage({
         conversationId: conversation.id,
@@ -86,12 +85,16 @@ export function ConversationHome() {
         durationMs: draftState.draft.durationMs,
       });
 
-      console.log("Inserted message");
-
       draftState.clearDraft();
       setIsDestinationPickerOpen(false);
+      setDraftSendStatus("idle");
+
+      await refreshConversations();
     } catch (error) {
-      console.error("Failed to send draft:", error);
+      setDraftSendStatus("error");
+      setDraftSendError(
+        error instanceof Error ? error.message : "Could not send voice snapshot."
+      );
     }
   }
 
