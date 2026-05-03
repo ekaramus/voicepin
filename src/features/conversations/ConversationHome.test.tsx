@@ -1,6 +1,9 @@
 import { render, screen, waitFor } from "@testing-library/react";import userEvent from "@testing-library/user-event";
 import { ConversationHome } from "./ConversationHome";
 
+const mockClearDraft = vi.hoisted(() => vi.fn());
+const mockListConversations = vi.fn();
+
 vi.mock("./conversation.repository", () => ({
   listConversations: vi.fn(async () => [
     {
@@ -15,8 +18,6 @@ vi.mock("./conversation.repository", () => ({
     },
   ]),
 }));
-
-const mockClearDraft = vi.hoisted(() => vi.fn());
 
 vi.mock("@/features/drafts/useDraftSnapshot", () => ({
   useDraftSnapshot: () => ({
@@ -63,13 +64,35 @@ vi.mock("@/features/drafts/useDraftSnapshot", () => ({
   }),
 }));
 
+vi.mock("@/features/messages/message.repository", () => ({
+  listMessagesByConversation: vi.fn(async () => []),
+}));
+
 vi.mock("@/features/messages/message.realtime", () => ({
   subscribeToConversationMessages: vi.fn(() => () => {}),
 }));
 
+vi.mock("./conversation.repository", () => ({
+  listConversations: () => mockListConversations(),
+}));
+
 describe("ConversationHome", () => {
+
   beforeEach(() => {
-    mockClearDraft.mockClear();
+    vi.clearAllMocks();
+
+    mockListConversations.mockResolvedValue([
+      {
+        id: "conversation-1",
+        type: "self",
+        name: "Me",
+        initials: "ME",
+        preview: "No voice snapshots yet",
+        durationMs: 0,
+        isPinned: true,
+        updatedAt: "2026-04-26T12:00:00.000Z",
+      },
+    ]);
   });
   
   it("renders product name", () => {
@@ -123,4 +146,46 @@ describe("ConversationHome", () => {
       expect(mockClearDraft).toHaveBeenCalledOnce();
     });
   });
+
+  it("refreshes conversations after returning from detail", async () => {
+    const user = userEvent.setup();
+
+    mockListConversations
+      .mockResolvedValueOnce([
+        {
+          id: "conversation-1",
+          type: "self",
+          name: "Me",
+          initials: "ME",
+          preview: "No voice snapshots yet",
+          durationMs: 0,
+          isPinned: true,
+          updatedAt: "2026-04-26T12:00:00.000Z",
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: "conversation-1",
+          type: "self",
+          name: "Me",
+          initials: "ME",
+          preview: "Voice snapshot",
+          durationMs: 3_000,
+          isPinned: true,
+          updatedAt: "2026-04-26T12:05:00.000Z",
+        },
+      ]);
+
+    render(<ConversationHome />);
+
+    await user.click(await screen.findByRole("button", { name: /Me/i }));
+
+    await user.click(
+      screen.getByRole("button", { name: /back to conversations/i })
+    );
+
+    expect(await screen.findByText("Voice snapshot")).toBeInTheDocument();
+    expect(mockListConversations).toHaveBeenCalledTimes(2);
+  });
+
 });
