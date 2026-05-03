@@ -430,6 +430,36 @@ Testing:
 - Verified direct conversations display the other user’s email
 - Verified fallback behavior when profile lookup fails
 
+### Step 12A Follow-up — Direct Conversations Stability & RLS Fix
+
+- Introduced `direct_pair_key` to uniquely identify direct conversations between two users
+- Updated direct conversation creation to prevent duplicates using deterministic pair keys
+- Refactored conversation loading to derive the other user from `direct_pair_key` instead of querying members
+- Removed recursive RLS policy that caused infinite recursion errors
+- Restored safe membership policy allowing users to read only their own memberships
+- Allowed authenticated users to read profiles for email resolution
+
+Testing:
+- Verified direct conversations no longer duplicate for the same user pair
+- Verified conversations persist correctly after page refresh
+- Verified conversation list loads without 500 errors
+- Verified RLS policies no longer produce recursion errors
+
+Decision notes:
+- Using `direct_pair_key` avoids complex and error-prone RLS joins
+- Application-level resolution is simpler and more predictable than database recursion
+- Profile reads are temporarily open to authenticated users for MVP simplicity
+
+Follow-up:
+- Fixed conversations reverting to “Friend” after refresh
+- Stabilized conversation loading by removing dependency on `conversation_members` for label resolution
+- Ensured consistent display of the other user’s email using `direct_pair_key`
+
+Testing:
+- Verified email labels persist after refresh
+- Verified fallback to “Friend” only occurs when profile is missing
+- Verified conversation list remains stable across reloads
+
 ## Product Direction
 
 VoicePin is evolving toward a capture-first model:
