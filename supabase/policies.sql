@@ -10,14 +10,13 @@ alter table messages enable row level security;
 drop policy if exists "Users can read own profile" on profiles;
 drop policy if exists "Users can insert own profile" on profiles;
 drop policy if exists "Users can update own profile" on profiles;
+drop policy if exists "Authenticated users can read profiles" on profiles;
 
 drop policy if exists "Users can read own memberships" on conversation_members;
 drop policy if exists "Users can insert own memberships" on conversation_members;
 drop policy if exists "Users can add members to conversations they created" on conversation_members;
 
-drop policy if exists "Users can read conversations they belong to" on conversations;
 drop policy if exists "Users can read conversations they own or belong to" on conversations;
-drop policy if exists "Users can insert conversations" on conversations;
 drop policy if exists "Users can insert own conversations" on conversations;
 
 drop policy if exists "Users can read messages in own conversations" on messages;
@@ -25,11 +24,10 @@ drop policy if exists "Users can insert messages in own conversations" on messag
 
 drop policy if exists "Authenticated users can upload voice messages" on storage.objects;
 drop policy if exists "Authenticated users can read voice messages" on storage.objects;
-drop policy if exists "Public can read voice messages" on storage.objects;
 
-drop policy if exists "Authenticated users can find profiles by email" on profiles;
-
+-- =========================
 -- Profiles
+-- =========================
 
 create policy "Users can read own profile"
 on profiles
@@ -50,16 +48,42 @@ to authenticated
 using (id = auth.uid())
 with check (id = auth.uid());
 
--- Allow finding users by email (MVP tradeoff)
-
-create policy "Authenticated users can find profiles by email"
+-- 🔥 IMPORTANT: allow reading other users (needed for email display)
+create policy "Authenticated users can read profiles"
 on profiles
 for select
 to authenticated
 using (true);
 
--- Conversation members
+-- =========================
+-- Conversations
+-- =========================
 
+create policy "Users can read conversations they own or belong to"
+on conversations
+for select
+to authenticated
+using (
+  created_by = auth.uid()
+  or exists (
+    select 1
+    from conversation_members
+    where conversation_members.conversation_id = conversations.id
+    and conversation_members.user_id = auth.uid()
+  )
+);
+
+create policy "Users can insert own conversations"
+on conversations
+for insert
+to authenticated
+with check (created_by = auth.uid());
+
+-- =========================
+-- Conversation members
+-- =========================
+
+-- ⚠️ ONLY own memberships (no recursion!)
 create policy "Users can read own memberships"
 on conversation_members
 for select
@@ -85,29 +109,9 @@ with check (
   )
 );
 
--- Conversations
-
-create policy "Users can read conversations they own or belong to"
-on conversations
-for select
-to authenticated
-using (
-  created_by = auth.uid()
-  or exists (
-    select 1
-    from conversation_members
-    where conversation_members.conversation_id = conversations.id
-    and conversation_members.user_id = auth.uid()
-  )
-);
-
-create policy "Users can insert own conversations"
-on conversations
-for insert
-to authenticated
-with check (created_by = auth.uid());
-
+-- =========================
 -- Messages
+-- =========================
 
 create policy "Users can read messages in own conversations"
 on messages
@@ -136,7 +140,9 @@ with check (
   )
 );
 
+-- =========================
 -- Storage (voice messages)
+-- =========================
 
 create policy "Authenticated users can upload voice messages"
 on storage.objects
@@ -148,12 +154,4 @@ create policy "Authenticated users can read voice messages"
 on storage.objects
 for select
 to authenticated
-using (bucket_id = 'voice-messages');
-
--- Optional (if bucket is public)
-
-create policy "Public can read voice messages"
-on storage.objects
-for select
-to anon
 using (bucket_id = 'voice-messages');
