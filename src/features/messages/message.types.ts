@@ -1,4 +1,8 @@
-export type VoiceMessageStatus = "local" | "uploading" | "transcribing" | "ready" | "failed";
+export type VoiceMessageStatus =
+  | "local"
+  | "transcribing"
+  | "ready"
+  | "transcription_failed";
 
 export type VoiceMessage = {
   id: string;
