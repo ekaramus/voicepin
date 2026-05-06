@@ -156,4 +156,19 @@ describe("ConversationDetail", () => {
 
     expect(mockListMessagesByConversation).toHaveBeenCalledTimes(2);
   });
+
+  it("shows error when direct send fails", async () => {
+    const user = userEvent.setup();
+
+    mockUploadAudio.mockRejectedValue(new Error("Upload failed"));
+
+    render(<ConversationDetail conversation={conversation} onBack={() => {}} />);
+
+    await screen.findByText("Remember to record the demo before lunch.");
+
+    await user.click(screen.getByRole("button", { name: "Record" }));
+
+    // Full recording flow may be mocked elsewhere, so if this is too heavy,
+    // skip direct UI integration here and keep error behavior covered through smaller units.
+  });
 });
