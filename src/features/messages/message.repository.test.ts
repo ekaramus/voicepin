@@ -47,6 +47,7 @@ describe("listMessagesByConversation", () => {
           audio_path: "audio.webm",
           duration_ms: 8_000,
           transcript: "Remember the demo.",
+          transcription_status: "ready",
           created_at: "2026-04-26T12:00:00.000Z",
         },
       ],
