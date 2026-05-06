@@ -1,4 +1,7 @@
 const mockInsert = vi.fn();
+const mockSelect = vi.fn();
+const mockSingle = vi.fn();
+const mockGetPublicUrl = vi.fn();
 const mockGetRequiredUser = vi.fn();
 
 vi.mock("@/lib/supabase/client", () => ({
@@ -6,6 +9,11 @@ vi.mock("@/lib/supabase/client", () => ({
     from: vi.fn(() => ({
       insert: mockInsert,
     })),
+    storage: {
+      from: vi.fn(() => ({
+        getPublicUrl: mockGetPublicUrl,
+      })),
+    },
   }),
 }));
 
@@ -23,12 +31,32 @@ describe("insertMessage", () => {
       id: "user-1",
       email: "test@example.com",
     });
+
+    mockInsert.mockReturnValue({
+      select: mockSelect,
+    });
+
+    mockSelect.mockReturnValue({
+      single: mockSingle,
+    });
+
+    mockGetPublicUrl.mockReturnValue({
+      data: {
+        publicUrl: "https://example.supabase.co/audio.webm",
+      },
+    });
   });
 
   it("inserts a persisted voice message with sender id", async () => {
-    mockInsert.mockResolvedValue({ error: null });
+    mockSingle.mockResolvedValue({
+      data: {
+        id: "message-1",
+        audio_path: "audio.webm",
+      },
+      error: null,
+    });
 
-    await insertMessage({
+    const result = await insertMessage({
       conversationId: "conversation-1",
       audioPath: "audio.webm",
       durationMs: 8_000,
@@ -40,6 +68,13 @@ describe("insertMessage", () => {
       audio_path: "audio.webm",
       duration_ms: 8_000,
       transcription_status: "transcribing",
+    });
+
+    expect(mockSelect).toHaveBeenCalledWith("id, audio_path");
+
+    expect(result).toEqual({
+      id: "message-1",
+      audioUrl: "https://example.supabase.co/audio.webm",
     });
   });
 
@@ -60,7 +95,8 @@ describe("insertMessage", () => {
   });
 
   it("throws when insert fails", async () => {
-    mockInsert.mockResolvedValue({
+    mockSingle.mockResolvedValue({
+      data: null,
       error: new Error("Insert failed"),
     });
 
