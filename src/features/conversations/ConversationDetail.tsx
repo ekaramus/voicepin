@@ -26,6 +26,8 @@ export function ConversationDetail({
   const [isRecorderOpen, setIsRecorderOpen] = useState(false);
   const recorder = useAudioRecorder();
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [sendStatus, setSendStatus] = useState<"idle" | "sending" | "error">("idle");
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const loadMessages = useCallback(async () => {
     try {
@@ -62,11 +64,14 @@ export function ConversationDetail({
   }
 
   async function sendLocalMessage() {
-    if (!recorder.audio) {
+    if (!recorder.audio || sendStatus === "sending") {
       return;
     }
 
     try {
+      setSendStatus("sending");
+      setSendError(null);
+
       const { path } = await uploadAudio(recorder.audio.blob);
 
       await insertMessage({
@@ -79,8 +84,13 @@ export function ConversationDetail({
       recorder.resetRecording();
 
       await loadMessages();
+
+      setSendStatus("idle");
     } catch (error) {
-      console.error("Failed to send direct message:", error);
+      setSendStatus("error");
+      setSendError(
+        error instanceof Error ? error.message : "Could not send voice snapshot."
+      );
     }
   }
 
@@ -110,7 +120,14 @@ export function ConversationDetail({
         {status === "ready" &&
           messages.map((message) => (
             <AudioMessageBubble key={message.id} message={message} />
-          ))}
+          )
+        )}
+        
+        {sendStatus === "error" && sendError && (
+          <div role="alert" className="rounded-[22px] border-2 border-[#27251f] bg-[#f4ead7] p-5 text-center text-sm text-[#d94f2b]">
+            {sendError}
+          </div>
+        )}
       </main>
 
       <div className="absolute inset-x-0 bottom-6 flex justify-center">
