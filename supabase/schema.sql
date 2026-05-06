@@ -43,4 +43,8 @@ create table if not exists messages (
   transcript text,
 
   created_at timestamptz default now()
+
+  transcription_status text
+    default 'transcribing'
+    check (transcription_status in ('transcribing', 'ready', 'failed')),
 );
