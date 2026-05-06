@@ -481,6 +481,24 @@ Decision notes:
 - Missing transcripts fall back to “Voice snapshot” until transcription is added
 - Full conversation metadata denormalization is intentionally deferred
 
+### Step 14 — Sending States and User-visible Errors
+
+- Added sending state for draft message delivery
+- Added user-visible errors when draft sending fails
+- Added sending/error props to destination picker
+- Added direct message sending state inside conversation detail
+- Removed reliance on console-only feedback for failed sends
+
+Testing:
+- Verified destination picker shows sending state
+- Verified destination picker shows send errors
+- Verified failed sends no longer silently disappear
+
+Decision notes:
+- Simple explicit sending states were chosen before optimistic UI
+- Draft is only cleared after upload and database insert succeed
+- Errors remain visible so beta testers can report failures clearly
+
 ## Product Direction
 
 VoicePin is evolving toward a capture-first model:
