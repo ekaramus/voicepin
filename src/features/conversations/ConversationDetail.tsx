@@ -12,6 +12,7 @@ import type { Conversation } from "./conversation.types";
 import { uploadAudio } from "@/features/messages/uploadAudio";
 import { insertMessage } from "@/features/messages/message.mutations";
 import { subscribeToConversationMessages } from "@/features/messages/message.realtime";
+import { requestTranscription } from "@/features/messages/requestTranscription";
 
 type ConversationDetailProps = {
   conversation: Conversation;
@@ -74,10 +75,15 @@ export function ConversationDetail({
 
       const { path } = await uploadAudio(recorder.audio.blob);
 
-      await insertMessage({
+      const message = await insertMessage({
         conversationId: conversation.id,
         audioPath: path,
         durationMs: recorder.audio.durationMs,
+      });
+
+      void requestTranscription({
+        messageId: message.id,
+        audioUrl: message.audioUrl,
       });
 
       setIsRecorderOpen(false);

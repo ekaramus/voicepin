@@ -42,26 +42,14 @@ vi.mock("@/features/messages/uploadAudio", () => ({
 }));
 
 vi.mock("@/features/messages/message.mutations", () => ({
-  insertMessage: vi.fn(async () => undefined),
+  insertMessage: vi.fn(async () => ({
+    id: "message-1",
+    audioUrl: "https://example.supabase.co/audio.webm",
+  })),
 }));
 
-vi.mock("@/features/messages/message.repository", () => ({
-  listMessagesByConversation: vi.fn(async () => []),
-}));
-
-vi.mock("@/features/drafts/useDraftSnapshot", () => ({
-  useDraftSnapshot: () => ({
-    draft: {
-      id: "draft-1",
-      blob: new Blob(["audio"], { type: "audio/webm" }),
-      audioUrl: "blob:test-audio",
-      durationMs: 8_000,
-      createdAt: "2026-04-26T12:00:00.000Z",
-    },
-    hasDraft: true,
-    createDraft: vi.fn(),
-    clearDraft: mockClearDraft,
-  }),
+vi.mock("@/features/messages/requestTranscription", () => ({
+  requestTranscription: vi.fn(async () => undefined),
 }));
 
 vi.mock("@/features/messages/message.repository", () => ({

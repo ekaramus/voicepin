@@ -14,6 +14,7 @@ import { useAudioRecorder } from "@/features/recorder/useAudioRecorder";
 import { uploadAudio } from "@/features/messages/uploadAudio";
 import { insertMessage } from "@/features/messages/message.mutations";
 import { AddFriendForm } from "./AddFriendForm";
+import { requestTranscription } from "@/features/messages/requestTranscription";
 
 export function ConversationHome() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -79,10 +80,15 @@ export function ConversationHome() {
 
       const { path } = await uploadAudio(draftState.draft.blob);
 
-      await insertMessage({
+      const message = await insertMessage({
         conversationId: conversation.id,
         audioPath: path,
         durationMs: draftState.draft.durationMs,
+      });
+
+      void requestTranscription({
+        messageId: message.id,
+        audioUrl: message.audioUrl,
       });
 
       draftState.clearDraft();
