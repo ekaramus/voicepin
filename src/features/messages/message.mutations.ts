@@ -20,6 +20,7 @@ export async function insertMessage({
     sender_id: user.id,
     audio_path: audioPath,
     duration_ms: durationMs,
+    transcription_status: "transcribing",
   });
 
   if (error) {

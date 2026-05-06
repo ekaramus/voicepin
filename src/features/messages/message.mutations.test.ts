@@ -39,6 +39,7 @@ describe("insertMessage", () => {
       sender_id: "user-1",
       audio_path: "audio.webm",
       duration_ms: 8_000,
+      transcription_status: "transcribing",
     });
   });
 
