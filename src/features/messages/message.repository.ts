@@ -1,5 +1,5 @@
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import type { VoiceMessage } from "./message.types";
+import type { VoiceMessage, VoiceMessageStatus } from "./message.types";
 
 type MessageRow = {
   id: string;
@@ -8,8 +8,44 @@ type MessageRow = {
   audio_path: string;
   duration_ms: number;
   transcript: string | null;
+  transcription_status: "transcribing" | "ready" | "failed" | null;
   created_at: string;
 };
+
+function mapTranscriptionStatus(
+  status: "transcribing" | "ready" | "failed" | null
+): VoiceMessageStatus {
+  if (status === "failed") {
+    return "transcription_failed";
+  }
+
+  if (status === "ready") {
+    return "ready";
+  }
+
+  return "transcribing";
+}
+
+function mapMessage(row: MessageRow): VoiceMessage {
+  const supabase = createSupabaseBrowserClient();
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage
+    .from("voice-messages")
+    .getPublicUrl(row.audio_path);
+
+  return {
+    id: row.id,
+    conversationId: row.conversation_id,
+    sender: "me",
+    audioUrl: publicUrl,
+    durationMs: row.duration_ms,
+    transcript: row.transcript,
+    status: mapTranscriptionStatus(row.transcription_status),
+    createdAt: row.created_at,
+  };
+}
 
 export async function listMessagesByConversation(
   conversationId: string
@@ -18,7 +54,9 @@ export async function listMessagesByConversation(
 
   const { data, error } = await supabase
     .from("messages")
-    .select("id, conversation_id, sender_id, audio_path, duration_ms, transcript, created_at")
+    .select(
+      "id, conversation_id, sender_id, audio_path, duration_ms, transcript, transcription_status, created_at"
+    )
     .eq("conversation_id", conversationId)
     .order("created_at", { ascending: true });
 
@@ -26,16 +64,5 @@ export async function listMessagesByConversation(
     throw error;
   }
 
-  return ((data ?? []) as MessageRow[]).map((row) => ({
-    id: row.id,
-    conversationId: row.conversation_id,
-    sender: "me",
-    audioUrl: supabase.storage
-      .from("voice-messages")
-      .getPublicUrl(row.audio_path).data.publicUrl,
-    durationMs: row.duration_ms,
-    transcript: row.transcript,
-    status: row.transcript ? "ready" : "local",
-    createdAt: row.created_at,
-  }));
+  return ((data ?? []) as MessageRow[]).map(mapMessage);
 }
