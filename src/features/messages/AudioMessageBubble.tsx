@@ -15,10 +15,18 @@ export function AudioMessageBubble({ message }: AudioMessageBubbleProps) {
           {formatDuration(message.durationMs)}
         </span>
       </div>
+      
+      {message.status === "transcribing" && (
+        <p className="mt-3 text-xs font-bold uppercase tracking-[0.14em] text-[#6f6758]">
+          Transcribing...
+        </p>
+      )}
 
-      <p className="mt-3 text-sm leading-5 text-[#27251f]">
-        {message.transcript ?? "Transcript pending..."}
-      </p>
+      {message.status === "transcription_failed" && (
+        <p role="alert" className="mt-3 text-xs font-bold uppercase tracking-[0.14em] text-[#d94f2b]">
+          Transcription failed
+        </p>
+      )}
     </article>
   );
 }
