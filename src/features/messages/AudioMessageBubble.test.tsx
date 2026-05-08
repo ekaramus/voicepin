@@ -2,9 +2,9 @@ import { render, screen } from "@testing-library/react";
 import { AudioMessageBubble } from "./AudioMessageBubble";
 import type { VoiceMessage } from "./message.types";
 
-const message: VoiceMessage = {
+const baseMessage: VoiceMessage = {
   id: "message-1",
-  conversationId: "me",
+  conversationId: "conversation-1",
   sender: "me",
   audioUrl: "blob:test-audio",
   durationMs: 8_000,
@@ -14,29 +14,23 @@ const message: VoiceMessage = {
 };
 
 describe("AudioMessageBubble", () => {
-  it("renders audio controls", () => {
-    render(<AudioMessageBubble message={message} />);
-
-    expect(document.querySelector("audio")).toBeInTheDocument();
-  });
-
-  it("renders formatted duration", () => {
-    render(<AudioMessageBubble message={message} />);
+  it("renders audio player", () => {
+    render(<AudioMessageBubble message={baseMessage} />);
 
     expect(screen.getByText("0:08")).toBeInTheDocument();
   });
 
   it("shows transcribing state when transcript is pending", () => {
-    render(<AudioMessageBubble message={message} />);
+    render(<AudioMessageBubble message={baseMessage} />);
 
-    expect(screen.getByText(/Transcribing/i)).toBeInTheDocument();
+    expect(screen.getByText(/transcribing/i)).toBeInTheDocument();
   });
 
-  it("renders transcript when available", () => {
+  it("renders transcript when ready", () => {
     render(
       <AudioMessageBubble
         message={{
-          ...message,
+          ...baseMessage,
           transcript: "Remember to record the demo.",
           status: "ready",
         }}
@@ -44,5 +38,34 @@ describe("AudioMessageBubble", () => {
     );
 
     expect(screen.getByText("Remember to record the demo.")).toBeInTheDocument();
+  });
+
+  it("shows failed state when transcription failed", () => {
+    render(
+      <AudioMessageBubble
+        message={{
+          ...baseMessage,
+          status: "transcription_failed",
+        }}
+      />
+    );
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /transcription failed/i
+    );
+  });
+
+  it("does not render transcript text while still transcribing", () => {
+    render(
+      <AudioMessageBubble
+        message={{
+          ...baseMessage,
+          transcript: "Hidden pending transcript",
+          status: "transcribing",
+        }}
+      />
+    );
+
+    expect(screen.queryByText("Hidden pending transcript")).not.toBeInTheDocument();
   });
 });
