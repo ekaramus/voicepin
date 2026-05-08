@@ -84,6 +84,8 @@ export function ConversationDetail({
       void requestTranscription({
         messageId: message.id,
         audioUrl: message.audioUrl,
+      }).catch((error) => {
+        console.error("Failed to request transcription:", error);
       });
 
       setIsRecorderOpen(false);
