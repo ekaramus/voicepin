@@ -1,11 +1,5 @@
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-type MessageChangePayload = {
-  new: {
-    conversation_id: string;
-  };
-};
-
 type SubscribeToConversationMessagesInput = {
   conversationId: string;
   onMessageChange: () => void;
@@ -22,12 +16,14 @@ export function subscribeToConversationMessages({
     .on(
       "postgres_changes",
       {
-        event: "INSERT",
+        event: "*",
         schema: "public",
         table: "messages",
         filter: `conversation_id=eq.${conversationId}`,
       },
-      () => {onMessageChange();}
+      () => {
+        onMessageChange();
+      }
     )
     .subscribe();
 
