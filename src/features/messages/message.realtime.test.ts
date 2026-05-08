@@ -1,6 +1,7 @@
 const mockOn = vi.fn();
 const mockSubscribe = vi.fn();
 const mockRemoveChannel = vi.fn();
+
 const mockChannel = {
   on: mockOn,
   subscribe: mockSubscribe,
@@ -23,7 +24,7 @@ describe("subscribeToConversationMessages", () => {
     mockSubscribe.mockReturnValue(mockChannel);
   });
 
-  it("subscribes to inserts for a conversation", () => {
+  it("subscribes to message changes for a conversation", () => {
     subscribeToConversationMessages({
       conversationId: "conversation-1",
       onMessageChange: vi.fn(),
@@ -32,7 +33,7 @@ describe("subscribeToConversationMessages", () => {
     expect(mockOn).toHaveBeenCalledWith(
       "postgres_changes",
       {
-        event: "INSERT",
+        event: "*",
         schema: "public",
         table: "messages",
         filter: "conversation_id=eq.conversation-1",
@@ -43,7 +44,7 @@ describe("subscribeToConversationMessages", () => {
     expect(mockSubscribe).toHaveBeenCalledOnce();
   });
 
-  it("calls handler when a message is inserted", () => {
+  it("calls handler when a message changes", () => {
     const onMessageChange = vi.fn();
 
     subscribeToConversationMessages({
