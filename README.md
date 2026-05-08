@@ -510,3 +510,33 @@ Instead of:
 Choose recipient → then message
 
 This allows faster, more natural voice interactions.
+
+### Step 15 — ElevenLabs Speech-to-Text
+
+- Added server-side transcription route using ElevenLabs Speech-to-Text
+- Kept ElevenLabs API key server-only
+- Added message transcription status
+- Marked new messages as transcribing after insert
+- Triggered transcription after draft and direct message sends
+- Saved transcript and transcription status back to Supabase
+- Displayed transcribing and failed states in the message UI
+- Added safer transcription error handling and failure recovery
+- Updated failed transcription flow to persist `failed` status in the database
+- Improved transcription route logging to surface only meaningful server-side errors
+- Added clearer client-side transcription request error handling
+
+Testing:
+- Verified message insert marks messages as transcribing
+- Verified transcription request helper calls API route
+- Verified transcription request helper handles failures
+- Verified message bubble renders transcription states
+- Verified failed transcription updates message state to `failed`
+- Verified quota/API failures no longer fail silently
+- Verified transcript persists correctly after successful transcription
+
+Decision notes:
+- Transcription is handled server-side to protect API keys
+- Scribe v2 is used as the transcription model
+- Automatic language detection is used instead of forcing a language code
+- Transcript updates currently rely on refresh/realtime updates rather than optimistic local transcript generation
+- Failed transcription states are intentionally persisted for visibility and debugging during beta
