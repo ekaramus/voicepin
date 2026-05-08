@@ -9,7 +9,7 @@ const message: VoiceMessage = {
   audioUrl: "blob:test-audio",
   durationMs: 8_000,
   transcript: null,
-  status: "local",
+  status: "transcribing",
   createdAt: "2026-04-26T12:00:00.000Z",
 };
 
@@ -26,10 +26,10 @@ describe("AudioMessageBubble", () => {
     expect(screen.getByText("0:08")).toBeInTheDocument();
   });
 
-  it("shows pending transcript when transcript is missing", () => {
+  it("shows transcribing state when transcript is pending", () => {
     render(<AudioMessageBubble message={message} />);
 
-    expect(screen.getByText(/Transcript pending/i)).toBeInTheDocument();
+    expect(screen.getByText(/Transcribing/i)).toBeInTheDocument();
   });
 
   it("renders transcript when available", () => {
