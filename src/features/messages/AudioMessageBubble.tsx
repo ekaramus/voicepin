@@ -17,7 +17,7 @@ export function AudioMessageBubble({ message }: AudioMessageBubbleProps) {
       </div>
       
       {message.status === "transcribing" && (
-        <p className="mt-3 text-xs font-bold uppercase tracking-[0.14em] text-[#6f6758]">
+        <p className="mt-3 text-xs font-black uppercase tracking-[0.14em] text-[#6f6758]">
           Transcribing...
         </p>
       )}
@@ -25,14 +25,14 @@ export function AudioMessageBubble({ message }: AudioMessageBubbleProps) {
       {message.status === "transcription_failed" && (
         <p
           role="alert"
-          className="mt-3 text-xs font-bold uppercase tracking-[0.14em] text-[#d94f2b]"
+          className="mt-3 text-xs font-black uppercase tracking-[0.14em] text-[#d94f2b]"
         >
           Transcription failed
         </p>
       )}
 
       {message.status === "ready" && message.transcript && (
-        <p className="mt-3 text-sm leading-6 text-[#27251f]">
+        <p className="mt-3 rounded-2xl border-2 border-[#27251f] bg-[#f4ead7] px-3 py-2 text-sm leading-6 text-[#27251f]">
           {message.transcript}
         </p>
       )}
