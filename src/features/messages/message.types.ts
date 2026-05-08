@@ -1,5 +1,4 @@
 export type VoiceMessageStatus =
-  | "local"
   | "transcribing"
   | "ready"
   | "transcription_failed";
