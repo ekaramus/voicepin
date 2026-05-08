@@ -540,3 +540,22 @@ Decision notes:
 - Automatic language detection is used instead of forcing a language code
 - Transcript updates currently rely on refresh/realtime updates rather than optimistic local transcript generation
 - Failed transcription states are intentionally persisted for visibility and debugging during beta
+
+### Step 16 — Transcript States
+
+- Added explicit message UI states for transcription lifecycle
+- Displayed “Transcribing...” while transcript generation is pending
+- Displayed transcript text only when transcription is ready
+- Displayed a visible failure state when transcription fails
+- Simplified message status handling around transcription-specific states
+
+Testing:
+- Verified audio messages render pending transcription state
+- Verified ready transcripts render correctly
+- Verified failed transcription state uses visible error text
+- Verified pending messages do not show transcript text prematurely
+
+Decision notes:
+- Audio remains playable regardless of transcription state
+- Transcript display is intentionally tied to persisted transcription status
+- Retry behavior is deferred to a later error-handling step
