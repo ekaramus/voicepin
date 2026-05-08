@@ -559,3 +559,20 @@ Decision notes:
 - Audio remains playable regardless of transcription state
 - Transcript display is intentionally tied to persisted transcription status
 - Retry behavior is deferred to a later error-handling step
+
+### Step 17 — Realtime Transcript Updates
+
+- Updated message realtime subscription to listen for inserts and updates
+- Refreshed open conversation when message transcription status changes
+- Allowed transcripts to appear automatically after server-side transcription completes
+- Kept Supabase as the source of truth for transcript state
+
+Testing:
+- Verified realtime subscription listens to message changes
+- Verified realtime callback reloads conversation messages
+- Verified transcript updates can appear without manual refresh
+
+Decision notes:
+- Realtime events trigger a full message reload instead of local patching
+- This keeps transcript state consistent with persisted Supabase data
+- Optimistic transcript updates are intentionally avoided because transcripts are generated server-side
