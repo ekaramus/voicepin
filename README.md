@@ -696,3 +696,30 @@ Before inviting users:
 - [ ] Users cannot see conversations they do not belong to
 - [ ] Core flow works with keyboard
 - [ ] README and deployment docs are up to date
+
+### Step 23 — Recorder UX and Time Limit Indicator
+
+- Updated recording controls so the main button clearly changes from start to stop while recording
+- Replaced ambiguous recording action with explicit “Stop recording” state
+- Added visible status copy explaining what happens while recording
+- Added circular 20-second recording limit indicator
+- Displayed elapsed time and remaining seconds during recording
+- Added near-limit warning when only a few seconds remain
+- Clarified destructive reset action as “Discard and record again”
+- Added stronger retro-style borders and 3D treatment to recorder action buttons
+- Removed heavy shadow from the circular timer so it reads as an indicator, not a button
+
+Testing:
+- Verified idle recorder shows “Start recording”
+- Verified recording state shows “Stop recording”
+- Verified stop action calls the correct handler
+- Verified remaining time is visible and accessible through `role="timer"`
+- Verified near-limit warning appears close to the 20-second limit
+- Verified preview actions are shown after recording
+- Verified reset action clearly communicates that the current recording will be discarded
+
+Decision notes:
+- A morphing record/stop button was chosen over separate controls to keep the mobile UI simple
+- Circular countdown was chosen for a stronger retro recorder feel
+- Text remains visible alongside the circular indicator so time information is not color-only
+- The reset action uses explicit destructive wording to reduce accidental data loss
