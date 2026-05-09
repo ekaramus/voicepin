@@ -96,4 +96,20 @@ describe("AudioMessageBubble", () => {
 
     expect(screen.queryByText("Hidden pending transcript")).not.toBeInTheDocument();
   });
+
+  it("exposes playback progress to assistive technology", () => {
+    render(<AudioMessageBubble message={baseMessage} />);
+
+    expect(
+      screen.getByLabelText(/playback progress/i)
+    ).toBeInTheDocument();
+  });
+
+  it("uses accessible play button label", () => {
+    render(<AudioMessageBubble message={baseMessage} />);
+
+    expect(
+      screen.getByRole("button", { name: /play voice message/i })
+    ).toBeInTheDocument();
+  });
 });
