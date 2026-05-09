@@ -644,3 +644,23 @@ Decision notes:
 - Accessibility was added alongside custom UI controls, not postponed to final polish
 - Native audio controls were replaced, so custom playback needed explicit accessible semantics
 - Focus trapping is deferred, but overlay dialog semantics are now in place
+
+### Step 21 — Performance Optimization
+
+- Prevented overlapping conversation refreshes on the home screen
+- Batched profile lookups for direct conversation labels
+- Batched latest-message preview lookups for conversation previews
+- Reduced per-conversation Supabase queries in the conversation list
+- Kept existing RLS-safe `direct_pair_key` label resolution
+
+Testing:
+- Verified self conversation still loads
+- Verified direct conversation labels still use the other user’s email
+- Verified latest message preview still works
+- Verified fallback preview still works when no messages exist
+- Verified repository errors are still surfaced correctly
+
+Decision notes:
+- Batched reads were chosen before denormalized metadata to keep schema changes minimal
+- Full conversation metadata denormalization remains a later optimization
+- React Query is still deferred until the app has more repeated client-side data flows
