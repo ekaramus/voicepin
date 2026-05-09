@@ -65,8 +65,7 @@ Every message is limited to a few seconds and automatically transcribed so it ca
 ```bash
 npm install
 npm run dev
-
----
+```
 
 ## Dev Log
 
@@ -664,3 +663,21 @@ Decision notes:
 - Batched reads were chosen before denormalized metadata to keep schema changes minimal
 - Full conversation metadata denormalization remains a later optimization
 - React Query is still deferred until the app has more repeated client-side data flows
+
+## Deployment
+
+Deployment notes are tracked in [`docs/deployment.md`](docs/deployment.md).
+
+Required services:
+
+- Supabase
+- Vercel
+- ElevenLabs
+
+Before deploying, verify:
+
+- Environment variables are configured
+- Supabase SQL setup has been applied
+- Google OAuth redirect URLs include the production domain
+- Realtime is enabled for messages
+- Full test suite passes
