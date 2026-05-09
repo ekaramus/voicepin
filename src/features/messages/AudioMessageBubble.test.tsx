@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { AudioMessageBubble } from "./AudioMessageBubble";
 import type { VoiceMessage } from "./message.types";
 
@@ -14,10 +15,37 @@ const baseMessage: VoiceMessage = {
 };
 
 describe("AudioMessageBubble", () => {
-  it("renders audio player", () => {
+  beforeEach(() => {
+    vi.spyOn(window.HTMLMediaElement.prototype, "play").mockResolvedValue();
+    vi.spyOn(window.HTMLMediaElement.prototype, "pause").mockImplementation(
+      () => {}
+    );
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("renders custom playback controls", () => {
     render(<AudioMessageBubble message={baseMessage} />);
 
+    expect(
+      screen.getByRole("button", { name: /play voice message/i })
+    ).toBeInTheDocument();
+
     expect(screen.getByText("0:08")).toBeInTheDocument();
+  });
+
+  it("starts playback when play button is clicked", async () => {
+    const user = userEvent.setup();
+
+    render(<AudioMessageBubble message={baseMessage} />);
+
+    await user.click(
+      screen.getByRole("button", { name: /play voice message/i })
+    );
+
+    expect(window.HTMLMediaElement.prototype.play).toHaveBeenCalled();
   });
 
   it("shows transcribing state when transcript is pending", () => {
