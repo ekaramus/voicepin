@@ -62,7 +62,7 @@ export function useAudioRecorder(): UseAudioRecorderResult {
     setAudio(null);
     setError(null);
     setStatus("idle");
-  }, [audio?.url, clearTimers]);
+  }, [audio, clearTimers]);
 
   const stopRecording = useCallback(() => {
     const recorder = mediaRecorderRef.current;
