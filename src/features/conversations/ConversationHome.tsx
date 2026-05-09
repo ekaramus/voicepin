@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ConversationDetail } from "./ConversationDetail";
 import { ConversationRow } from "./ConversationRow";
 import { listConversations } from "./conversation.repository";
@@ -37,9 +37,15 @@ export function ConversationHome() {
   >("idle");
   const [draftSendError, setDraftSendError] = useState<string | null>(null);
   const recorder = useAudioRecorder();
+  const isRefreshingConversationsRef = useRef(false);
 
-  async function refreshConversations() {
+  const refreshConversations = useCallback(async () => {
+    if (isRefreshingConversationsRef.current) {
+      return;
+    }
+
     try {
+      isRefreshingConversationsRef.current = true;
       setConversationStatus("loading");
       setConversationError(null);
 
@@ -54,12 +60,14 @@ export function ConversationHome() {
       setConversationError(
         getErrorMessage(error, "Could not load conversations.")
       );
+    } finally {
+      isRefreshingConversationsRef.current = false;
     }
-  }
+  }, []);
 
   useEffect(() => {
     void refreshConversations();
-  }, []);
+  }, [refreshConversations]);
 
   function closeRecorder() {
     setIsRecorderOpen(false);
