@@ -101,8 +101,8 @@ describe("AudioMessageBubble", () => {
     render(<AudioMessageBubble message={baseMessage} />);
 
     expect(
-      screen.getByLabelText(/playback progress/i)
-    ).toBeInTheDocument();
+      screen.getByRole("progressbar", { name: /playback progress/i })
+    ).toHaveAttribute("aria-valuenow", "0");
   });
 
   it("uses accessible play button label", () => {

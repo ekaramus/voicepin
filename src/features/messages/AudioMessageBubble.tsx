@@ -33,9 +33,11 @@ export function AudioMessageBubble({ message }: AudioMessageBubbleProps) {
 
         <div className="min-w-0 flex-1">
           <div
-            aria-label={`Playback progress ${Math.round(
-              playback.progress * 100
-            )} percent`}
+            role="progressbar"
+            aria-label="Playback progress"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(playback.progress * 100)}
             className="h-3 overflow-hidden rounded-full border-2 border-[#27251f] bg-[#f4ead7]"
           >
             <div
