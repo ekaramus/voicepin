@@ -187,4 +187,33 @@ describe("ConversationHome", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("RLS failed");
   });
 
+  it("does not start overlapping conversation refreshes", async () => {
+    let resolveConversations: (value: unknown) => void;
+
+    mockListConversations.mockReturnValue(
+      new Promise((resolve) => {
+        resolveConversations = resolve;
+      })
+    );
+
+    render(<ConversationHome />);
+
+    await screen.findByText(/loading conversations/i);
+
+    expect(mockListConversations).toHaveBeenCalledTimes(1);
+
+    resolveConversations!([
+      {
+        id: "conversation-1",
+        type: "self",
+        name: "Me",
+        initials: "ME",
+        preview: "No voice snapshots yet",
+        durationMs: 0,
+        isPinned: true,
+        updatedAt: "2026-04-26T12:00:00.000Z",
+      },
+    ]);
+  });
+
 });
