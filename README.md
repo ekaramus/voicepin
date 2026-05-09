@@ -615,3 +615,32 @@ Decision notes:
 - A small custom player was chosen to better match the retro mobile-first UI
 - Native audio remains underneath for reliable playback behavior
 - Advanced seeking and waveform visuals are deferred
+
+### Step 20 — Accessibility Check
+
+- Added accessibility-focused checks for custom playback controls
+- Exposed playback progress as a semantic progressbar
+- Added dialog semantics to draft destination picker
+- Added dialog semantics to recording overlay
+- Improved Add Friend form error accessibility
+- Connected form error state with `aria-invalid` and `aria-describedby`
+
+Testing:
+- Verified message playback controls have accessible names
+- Verified playback progress is exposed as a progressbar
+- Verified draft destination picker is announced as a dialog
+- Verified recording overlay is announced as a dialog
+- Verified Add Friend errors are visible and connected to the email input
+
+Manual checklist:
+- Navigate core flow with keyboard only
+- Confirm focus is visible on buttons and inputs
+- Confirm overlays have clear close/cancel controls
+- Confirm screen reader names for Record, Play, Pause, Send, Cancel, and Sign out
+- Confirm errors are visible and announced with `role="alert"`
+- Confirm text contrast remains readable on mobile
+
+Decision notes:
+- Accessibility was added alongside custom UI controls, not postponed to final polish
+- Native audio controls were replaced, so custom playback needed explicit accessible semantics
+- Focus trapping is deferred, but overlay dialog semantics are now in place
