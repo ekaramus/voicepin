@@ -1,6 +1,8 @@
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+
 type RequestTranscriptionInput = {
   messageId: string;
-  audioUrl: string;
+  audioPath: string;
 };
 
 type TranscriptionErrorResponse = {
@@ -10,16 +12,29 @@ type TranscriptionErrorResponse = {
 
 export async function requestTranscription({
   messageId,
-  audioUrl,
+  audioPath,
 }: RequestTranscriptionInput): Promise<void> {
+  const supabase = createSupabaseBrowserClient();
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const token = session?.access_token;
+
+  if (!token) {
+    throw new Error("Authentication is required to transcribe audio.");
+  }
+
   const response = await fetch("/api/transcribe", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
       messageId,
-      audioUrl,
+      audioPath,
     }),
   });
 
