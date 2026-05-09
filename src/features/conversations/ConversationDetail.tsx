@@ -13,6 +13,7 @@ import { uploadAudio } from "@/features/messages/uploadAudio";
 import { insertMessage } from "@/features/messages/message.mutations";
 import { subscribeToConversationMessages } from "@/features/messages/message.realtime";
 import { requestTranscription } from "@/features/messages/requestTranscription";
+import { getErrorMessage } from "@/lib/getErrorMessage";
 
 type ConversationDetailProps = {
   conversation: Conversation;
@@ -97,7 +98,7 @@ export function ConversationDetail({
     } catch (error) {
       setSendStatus("error");
       setSendError(
-        error instanceof Error ? error.message : "Could not send voice snapshot."
+        getErrorMessage(error, "Could not send voice snapshot.")
       );
     }
   }
