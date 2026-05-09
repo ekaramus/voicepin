@@ -681,3 +681,18 @@ Before deploying, verify:
 - Google OAuth redirect URLs include the production domain
 - Realtime is enabled for messages
 - Full test suite passes
+
+## Private Beta Checklist
+
+Before inviting users:
+
+- [ ] Production deployment works
+- [ ] Google auth works on production URL
+- [ ] Audio upload works
+- [ ] Messages persist after refresh
+- [ ] Transcription succeeds
+- [ ] Transcription failure state is visible
+- [ ] Direct conversations work between two users
+- [ ] Users cannot see conversations they do not belong to
+- [ ] Core flow works with keyboard
+- [ ] README and deployment docs are up to date
