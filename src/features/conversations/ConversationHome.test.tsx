@@ -179,4 +179,12 @@ describe("ConversationHome", () => {
     });
   });
 
+  it("shows error when conversations fail to load", async () => {
+    mockListConversations.mockRejectedValue(new Error("RLS failed"));
+
+    render(<ConversationHome />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("RLS failed");
+  });
+
 });

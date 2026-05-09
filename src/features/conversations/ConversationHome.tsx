@@ -19,41 +19,47 @@ import { getErrorMessage } from "@/lib/getErrorMessage";
 
 export function ConversationHome() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [selectedConversation, setSelectedConversation] =
+    useState<Conversation | null>(null);
+
+  const [conversationStatus, setConversationStatus] = useState<
+    "loading" | "ready" | "error"
+  >("loading");
+  const [conversationError, setConversationError] = useState<string | null>(
+    null
+  );
+
   const [isRecorderOpen, setIsRecorderOpen] = useState(false);
   const [isDestinationPickerOpen, setIsDestinationPickerOpen] = useState(false);
   const draftState = useDraftSnapshot();
-  const [draftSendStatus, setDraftSendStatus] = useState<"idle" | "sending" | "error">("idle");
+  const [draftSendStatus, setDraftSendStatus] = useState<
+    "idle" | "sending" | "error"
+  >("idle");
   const [draftSendError, setDraftSendError] = useState<string | null>(null);
   const recorder = useAudioRecorder();
 
-  useEffect(() => {
-    let isMounted = true;
+  async function refreshConversations() {
+    try {
+      setConversationStatus("loading");
+      setConversationError(null);
 
-    async function load() {
       const data = await listConversations();
 
-      if (isMounted) {
-        setConversations(data);
-      }
+      setConversations(data);
+      setConversationStatus("ready");
+    } catch (error) {
+      console.error("Failed to load conversations:", error);
+
+      setConversationStatus("error");
+      setConversationError(
+        getErrorMessage(error, "Could not load conversations.")
+      );
     }
-
-    void load();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  async function refreshConversations() {
-    const data = await listConversations();
-    setConversations(data);
   }
 
-  function handleBackToConversations() {
-    setSelectedConversation(null);
+  useEffect(() => {
     void refreshConversations();
-  }
+  }, []);
 
   function closeRecorder() {
     setIsRecorderOpen(false);
@@ -87,18 +93,18 @@ export function ConversationHome() {
         durationMs: draftState.draft.durationMs,
       });
 
+      draftState.clearDraft();
+      setIsDestinationPickerOpen(false);
+      setDraftSendStatus("idle");
+
+      await refreshConversations();
+
       void requestTranscription({
         messageId: message.id,
         audioUrl: message.audioUrl,
       }).catch((error) => {
         console.error("Failed to request transcription:", error);
       });
-
-      draftState.clearDraft();
-      setIsDestinationPickerOpen(false);
-      setDraftSendStatus("idle");
-
-      await refreshConversations();
     } catch (error) {
       setDraftSendStatus("error");
       setDraftSendError(
@@ -121,20 +127,24 @@ export function ConversationHome() {
     setSelectedConversation(conversation);
   }
 
+  function handleBackToConversations() {
+    setSelectedConversation(null);
+    void refreshConversations();
+  }
+
   if (selectedConversation) {
     return (
       <ConversationDetail
         conversation={selectedConversation}
-        onBack={handleBackToConversations}      />
+        onBack={handleBackToConversations}
+      />
     );
   }
 
   return (
     <div className="flex flex-1 flex-col">
       <header className="border-b-2 border-[#27251f] px-5 py-4">
-        <h1 className="text-2xl font-black tracking-[-0.08em]">
-          VoicePin
-        </h1>
+        <h1 className="text-2xl font-black tracking-[-0.08em]">VoicePin</h1>
         <p className="mt-1 text-xs uppercase tracking-[0.16em] text-[#6f6758]">
           tiny voice snapshots
         </p>
@@ -144,10 +154,23 @@ export function ConversationHome() {
         <p className="text-[10px] uppercase tracking-[0.2em] text-[#f7d35f]">
           Beta recorder
         </p>
-        <p className="mt-1 text-sm">
-          No typing. Max 20 seconds.
-        </p>
+        <p className="mt-1 text-sm">No typing. Max 20 seconds.</p>
       </section>
+
+      {conversationStatus === "loading" && (
+        <p className="px-5 py-4 text-sm text-[#6f6758]">
+          Loading conversations...
+        </p>
+      )}
+
+      {conversationStatus === "error" && (
+        <p
+          role="alert"
+          className="mx-5 mt-4 rounded-2xl border-2 border-[#27251f] bg-[#f4ead7] p-4 text-sm text-[#d94f2b]"
+        >
+          {conversationError ?? "Could not load conversations."}
+        </p>
+      )}
 
       <div>
         {conversations.map((conversation) => (
@@ -168,7 +191,11 @@ export function ConversationHome() {
       {draftState.draft && (
         <DraftBar
           draft={draftState.draft}
-          onSend={() => setIsDestinationPickerOpen(true)}
+          onSend={() => {
+            setDraftSendStatus("idle");
+            setDraftSendError(null);
+            setIsDestinationPickerOpen(true);
+          }}
           onDelete={draftState.clearDraft}
         />
       )}
