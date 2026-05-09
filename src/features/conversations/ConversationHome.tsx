@@ -15,6 +15,7 @@ import { uploadAudio } from "@/features/messages/uploadAudio";
 import { insertMessage } from "@/features/messages/message.mutations";
 import { AddFriendForm } from "./AddFriendForm";
 import { requestTranscription } from "@/features/messages/requestTranscription";
+import { getErrorMessage } from "@/lib/getErrorMessage";
 
 export function ConversationHome() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -101,7 +102,7 @@ export function ConversationHome() {
     } catch (error) {
       setDraftSendStatus("error");
       setDraftSendError(
-        error instanceof Error ? error.message : "Could not send voice snapshot."
+        getErrorMessage(error, "Could not send voice snapshot.")
       );
     }
   }
