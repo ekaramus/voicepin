@@ -8,7 +8,17 @@ type AudioMessageBubbleProps = {
 };
 
 export function AudioMessageBubble({ message }: AudioMessageBubbleProps) {
-  const playback = useAudioPlayback({
+  const {
+    audioRef,
+    isPlaying,
+    currentTimeMs,
+    durationMs,
+    progress,
+    togglePlayback,
+    handleLoadedMetadata,
+    handleTimeUpdate,
+    handleEnded,
+  } = useAudioPlayback({
     audioUrl: message.audioUrl,
     fallbackDurationMs: message.durationMs,
   });
@@ -19,12 +29,12 @@ export function AudioMessageBubble({ message }: AudioMessageBubbleProps) {
         <button
           type="button"
           onClick={() => {
-            void playback.togglePlayback();
+            void togglePlayback();
           }}
-          aria-label={playback.isPlaying ? "Pause voice message" : "Play voice message"}
+          aria-label={isPlaying ? "Pause voice message" : "Play voice message"}
           className="grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 border-[#27251f] bg-[#d94f2b] text-[#f4ead7] shadow-[3px_3px_0_#27251f] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
         >
-          {playback.isPlaying ? (
+          {isPlaying ? (
             <Pause aria-hidden="true" size={20} strokeWidth={3} />
           ) : (
             <Play aria-hidden="true" size={20} strokeWidth={3} />
@@ -37,30 +47,30 @@ export function AudioMessageBubble({ message }: AudioMessageBubbleProps) {
             aria-label="Playback progress"
             aria-valuemin={0}
             aria-valuemax={100}
-            aria-valuenow={Math.round(playback.progress * 100)}
+            aria-valuenow={Math.round(progress * 100)}
             className="h-3 overflow-hidden rounded-full border-2 border-[#27251f] bg-[#f4ead7]"
           >
             <div
               className="h-full bg-[#27251f]"
               style={{
-                width: `${playback.progress * 100}%`,
+                width: `${progress * 100}%`,
               }}
             />
           </div>
 
           <div className="mt-2 flex items-center justify-between text-xs font-black text-[#27251f]">
-            <span>{formatDuration(playback.currentTimeMs)}</span>
-            <span>{formatDuration(playback.durationMs)}</span>
+            <span>{formatDuration(currentTimeMs)}</span>
+            <span>{formatDuration(durationMs)}</span>
           </div>
         </div>
 
         <audio
-          ref={playback.audioRef}
+          ref={audioRef}
           src={message.audioUrl}
           preload="metadata"
-          onLoadedMetadata={playback.handleLoadedMetadata}
-          onTimeUpdate={playback.handleTimeUpdate}
-          onEnded={playback.handleEnded}
+          onLoadedMetadata={handleLoadedMetadata}
+          onTimeUpdate={handleTimeUpdate}
+          onEnded={handleEnded}
           className="hidden"
         />
       </div>
