@@ -3,6 +3,11 @@ type RequestTranscriptionInput = {
   audioUrl: string;
 };
 
+type TranscriptionErrorResponse = {
+  error?: string;
+  details?: string;
+};
+
 export async function requestTranscription({
   messageId,
   audioUrl,
@@ -19,6 +24,12 @@ export async function requestTranscription({
   });
 
   if (!response.ok) {
-    throw new Error("Could not request transcription.");
+    const body = (await response
+      .json()
+      .catch(() => null)) as TranscriptionErrorResponse | null;
+
+    throw new Error(
+      body?.details ?? body?.error ?? "Could not request transcription."
+    );
   }
 }
