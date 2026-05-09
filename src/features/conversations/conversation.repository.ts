@@ -17,7 +17,21 @@ type MembershipRow = {
 };
 
 type ProfileRow = {
+  id: string;
   email: string | null;
+};
+
+type MessagePreviewRow = {
+  conversation_id: string;
+  transcript: string | null;
+  duration_ms: number;
+  created_at: string;
+};
+
+type ConversationPreview = {
+  preview: string;
+  durationMs: number;
+  updatedAt: string;
 };
 
 function normalizeConversation(
@@ -34,77 +48,91 @@ function getInitials(value: string) {
   return value.slice(0, 2).toUpperCase();
 }
 
-/**
- * Resolve other user using direct_pair_key
- */
-async function getDirectConversationLabelFromPairKey(
+function getOtherUserIdFromPairKey(
   directPairKey: string | null,
   currentUserId: string
-): Promise<{ name: string; initials: string }> {
+): string | null {
   if (!directPairKey) {
-    return { name: "Friend", initials: "FR" };
+    return null;
   }
 
   const [userA, userB] = directPairKey.split(":");
-  const otherUserId = userA === currentUserId ? userB : userA;
 
-  if (!otherUserId) {
-    return { name: "Friend", initials: "FR" };
+  if (userA === currentUserId) {
+    return userB ?? null;
+  }
+
+  if (userB === currentUserId) {
+    return userA ?? null;
+  }
+
+  return null;
+}
+
+async function getProfilesById(
+  userIds: string[]
+): Promise<Map<string, ProfileRow>> {
+  if (userIds.length === 0) {
+    return new Map();
   }
 
   const supabase = createSupabaseBrowserClient();
 
-  const { data: profile, error } = await supabase
+  const { data, error } = await supabase
     .from("profiles")
-    .select("email")
-    .eq("id", otherUserId)
-    .single();
+    .select("id, email")
+    .in("id", userIds);
 
-  if (error || !(profile as ProfileRow | null)?.email) {
-    return { name: "Friend", initials: "FR" };
+  if (error) {
+    throw error;
   }
 
-  const email = (profile as ProfileRow).email ?? "Friend";
-
-  return {
-    name: email,
-    initials: getInitials(email),
-  };
+  return new Map(
+    ((data ?? []) as ProfileRow[]).map((profile) => [profile.id, profile])
+  );
 }
 
-/**
- * Get latest message preview + activity timestamp
- */
-async function getConversationPreview(
-  conversationId: string,
-  fallbackUpdatedAt: string
-): Promise<{
-  preview: string;
-  durationMs: number;
-  updatedAt: string;
-}> {
+async function getLatestMessagePreviewsByConversationId(
+  conversationIds: string[]
+): Promise<Map<string, ConversationPreview>> {
+  if (conversationIds.length === 0) {
+    return new Map();
+  }
+
   const supabase = createSupabaseBrowserClient();
 
   const { data, error } = await supabase
     .from("messages")
-    .select("transcript, duration_ms, created_at")
-    .eq("conversation_id", conversationId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .select("conversation_id, transcript, duration_ms, created_at")
+    .in("conversation_id", conversationIds)
+    .order("created_at", { ascending: false });
 
-  if (error || !data) {
-    return {
-      preview: "No voice snapshots yet",
-      durationMs: 0,
-      updatedAt: fallbackUpdatedAt,
-    };
+  if (error) {
+    throw error;
   }
 
+  const previews = new Map<string, ConversationPreview>();
+
+  for (const message of (data ?? []) as MessagePreviewRow[]) {
+    if (previews.has(message.conversation_id)) {
+      continue;
+    }
+
+    previews.set(message.conversation_id, {
+      preview: message.transcript ?? "Voice snapshot",
+      durationMs: message.duration_ms,
+      updatedAt: message.created_at,
+    });
+  }
+
+  return previews;
+}
+
+function getFallbackPreview(updatedAt: string): ConversationPreview {
   return {
-    preview: data.transcript ?? "Voice snapshot",
-    durationMs: data.duration_ms,
-    updatedAt: data.created_at,
+    preview: "No voice snapshots yet",
+    durationMs: 0,
+    updatedAt,
   };
 }
 
@@ -125,7 +153,7 @@ export async function listConversations(): Promise<Conversation[]> {
     throw error;
   }
 
-  const directConversations: Conversation[] = [];
+  const directConversationRows: ConversationRow[] = [];
 
   for (const membership of (data ?? []) as MembershipRow[]) {
     const conversation = normalizeConversation(membership.conversations);
@@ -134,35 +162,28 @@ export async function listConversations(): Promise<Conversation[]> {
       continue;
     }
 
-    const label = await getDirectConversationLabelFromPairKey(
-      conversation.direct_pair_key,
-      user.id
-    );
-
-    const preview = await getConversationPreview(
-      conversation.id,
-      conversation.created_at
-    );
-
-    directConversations.push({
-      id: conversation.id,
-      type: "direct",
-      name: label.name,
-      initials: label.initials,
-      preview: preview.preview,
-      durationMs: preview.durationMs,
-      isPinned: false,
-      updatedAt: preview.updatedAt,
-    });
+    directConversationRows.push(conversation);
   }
 
-  /**
-   * Hydrate self conversation preview
-   */
-  const selfPreview = await getConversationPreview(
+  const allConversationIds = [
     selfConversation.id,
-    selfConversation.updatedAt
-  );
+    ...directConversationRows.map((conversation) => conversation.id),
+  ];
+
+  const otherUserIds = directConversationRows
+    .map((conversation) =>
+      getOtherUserIdFromPairKey(conversation.direct_pair_key, user.id)
+    )
+    .filter((value): value is string => Boolean(value));
+
+  const [profilesById, previewsByConversationId] = await Promise.all([
+    getProfilesById(otherUserIds),
+    getLatestMessagePreviewsByConversationId(allConversationIds),
+  ]);
+
+  const selfPreview =
+    previewsByConversationId.get(selfConversation.id) ??
+    getFallbackPreview(selfConversation.updatedAt);
 
   const hydratedSelfConversation: Conversation = {
     ...selfConversation,
@@ -170,6 +191,32 @@ export async function listConversations(): Promise<Conversation[]> {
     durationMs: selfPreview.durationMs,
     updatedAt: selfPreview.updatedAt,
   };
+
+  const directConversations: Conversation[] = directConversationRows.map(
+    (conversation) => {
+      const otherUserId = getOtherUserIdFromPairKey(
+        conversation.direct_pair_key,
+        user.id
+      );
+
+      const profile = otherUserId ? profilesById.get(otherUserId) : null;
+      const name = profile?.email ?? "Friend";
+      const preview =
+        previewsByConversationId.get(conversation.id) ??
+        getFallbackPreview(conversation.created_at);
+
+      return {
+        id: conversation.id,
+        type: "direct",
+        name,
+        initials: getInitials(name),
+        preview: preview.preview,
+        durationMs: preview.durationMs,
+        isPinned: false,
+        updatedAt: preview.updatedAt,
+      };
+    }
+  );
 
   return sortConversations([
     hydratedSelfConversation,
