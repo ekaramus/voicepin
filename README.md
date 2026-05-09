@@ -596,3 +596,22 @@ Decision notes:
 - Upload + database insert are treated as the core send operation
 - Transcription is treated as a follow-up process and may fail independently
 - Errors are visible enough for beta testers to report without opening DevTools
+
+### Step 19 — Message Playback Improvements
+
+- Replaced raw browser audio controls with custom playback UI
+- Added play/pause control for voice messages
+- Added progress bar and current/total duration display
+- Kept audio element hidden while preserving browser playback behavior
+- Kept transcript lifecycle states below playback controls
+
+Testing:
+- Verified custom playback controls render
+- Verified play action calls audio playback
+- Verified transcript states still render correctly
+- Verified playback hook initializes and resets safely
+
+Decision notes:
+- A small custom player was chosen to better match the retro mobile-first UI
+- Native audio remains underneath for reliable playback behavior
+- Advanced seeking and waveform visuals are deferred
