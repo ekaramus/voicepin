@@ -158,4 +158,25 @@ describe("RecordingOverlay", () => {
 
     expect(screen.getByText(/discard and close/i)).toBeInTheDocument();
   });
+
+  it("renders as an accessible dialog", () => {
+    render(
+      <RecordingOverlay
+        mode="draft"
+        status="idle"
+        error={null}
+        durationMs={0}
+        audioUrl={undefined}
+        onStart={() => {}}
+        onStop={() => {}}
+        onReset={() => {}}
+        onClose={() => {}}
+        onSend={() => {}}
+      />
+    );
+
+    expect(
+      screen.getByRole("dialog", { name: /tiny thought/i })
+    ).toBeInTheDocument();
+  });
 });

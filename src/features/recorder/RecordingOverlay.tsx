@@ -40,7 +40,12 @@ export function RecordingOverlay({
   const progress = Math.min(durationMs / MAX_RECORDING_MS, 1);
 
   return (
-    <section className="absolute inset-0 z-50 flex flex-col bg-[#27251f]/95 p-5 text-[#f4ead7]">
+    <section 
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="recording-overlay-title"
+      className="absolute inset-0 z-50 flex flex-col bg-[#27251f]/95 p-5 text-[#f4ead7]"
+    >
       <button
         type="button"
         aria-label="Discard recording and close"
@@ -53,7 +58,7 @@ export function RecordingOverlay({
         <p className="text-[10px] uppercase tracking-[0.24em] text-[#f7d35f]">
           Recording
         </p>
-        <h2 className="mt-2 text-3xl font-black tracking-[-0.08em]">
+        <h2 id="recording-overlay-title" className="mt-2 text-3xl font-black tracking-[-0.08em]">
           Tiny thought
         </h2>
       </header>
