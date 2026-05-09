@@ -21,9 +21,17 @@ export function DraftDestinationPicker({
   sendError = null,
 }: DraftDestinationPickerProps) {
   return (
-    <div className="fixed inset-0 z-20 flex flex-col bg-[#eadfc9]">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="draft-destination-title"
+      className="fixed inset-0 z-20 flex flex-col bg-[#eadfc9]"
+    >
       <header className="flex items-center justify-between border-b-2 border-[#27251f] px-5 py-4">
-        <h2 className="text-lg font-black tracking-[-0.08em]">
+        <h2
+          id="draft-destination-title"
+          className="text-lg font-black tracking-[-0.08em]"
+        >
           Send to
         </h2>
 

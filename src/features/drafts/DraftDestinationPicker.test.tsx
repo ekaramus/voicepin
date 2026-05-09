@@ -126,4 +126,19 @@ describe("DraftDestinationPicker", () => {
 
     expect(screen.getByRole("alert")).toHaveTextContent("Upload failed");
   });
+
+  it("renders as a modal dialog", () => {
+    render(
+      <DraftDestinationPicker
+        draft={draft}
+        conversations={conversations}
+        onSelect={() => {}}
+        onCancel={() => {}}
+      />
+    );
+
+    expect(
+      screen.getByRole("dialog", { name: /send to/i })
+    ).toBeInTheDocument();
+  });
 });
