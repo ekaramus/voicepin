@@ -1,5 +1,6 @@
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { VoiceMessage, VoiceMessageStatus } from "./message.types";
+import { requestAudioUrl } from "./requestAudioUrl";
 
 type MessageRow = {
   id: string;
@@ -26,20 +27,16 @@ function mapTranscriptionStatus(
   return "transcribing";
 }
 
-function mapMessage(row: MessageRow): VoiceMessage {
-  const supabase = createSupabaseBrowserClient();
-
-  const {
-    data: { publicUrl },
-  } = supabase.storage
-    .from("voice-messages")
-    .getPublicUrl(row.audio_path);
+async function mapMessage(row: MessageRow): Promise<VoiceMessage> {
+  const audioUrl = await requestAudioUrl({
+    messageId: row.id,
+  });
 
   return {
     id: row.id,
     conversationId: row.conversation_id,
     sender: "me",
-    audioUrl: publicUrl,
+    audioUrl,
     durationMs: row.duration_ms,
     transcript: row.transcript,
     status: mapTranscriptionStatus(row.transcription_status),
@@ -64,5 +61,5 @@ export async function listMessagesByConversation(
     throw error;
   }
 
-  return ((data ?? []) as MessageRow[]).map(mapMessage);
+  return Promise.all(((data ?? []) as MessageRow[]).map(mapMessage));
 }
