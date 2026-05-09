@@ -576,3 +576,23 @@ Decision notes:
 - Realtime events trigger a full message reload instead of local patching
 - This keeps transcript state consistent with persisted Supabase data
 - Optimistic transcript updates are intentionally avoided because transcripts are generated server-side
+
+### Step 18 — Error Handling Polish
+
+- Added shared helper for converting unknown errors into user-safe messages
+- Preserved server-provided transcription error details
+- Standardized draft send error handling
+- Standardized direct message send error handling
+- Kept transcription request failures from breaking the main send flow
+- Added visible conversation loading error state
+
+Testing:
+- Verified shared error helper handles Error, object-like errors, and fallbacks
+- Verified transcription request surfaces server-provided details
+- Verified conversation loading failures render visible error state
+- Verified drafts are not cleared when sending fails
+
+Decision notes:
+- Upload + database insert are treated as the core send operation
+- Transcription is treated as a follow-up process and may fail independently
+- Errors are visible enough for beta testers to report without opening DevTools
