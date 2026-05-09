@@ -56,6 +56,8 @@ export function AddFriendForm({ onConversationReady }: AddFriendFormProps) {
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           placeholder="friend@example.com"
+          aria-describedby={status === "error" ? "friend-email-error" : undefined}
+          aria-invalid={status === "error"}
           className="min-w-0 flex-1 rounded-2xl border-2 border-[#27251f] bg-[#f4ead7] px-3 py-3 text-sm outline-none"
         />
 
@@ -69,7 +71,11 @@ export function AddFriendForm({ onConversationReady }: AddFriendFormProps) {
       </div>
 
       {status === "error" && (
-        <p role="alert" className="mt-2 text-sm text-[#d94f2b]">
+        <p
+          id="friend-email-error"
+          role="alert"
+          className="mt-2 text-sm text-[#d94f2b]"
+        >
           {errorMessage}
         </p>
       )}

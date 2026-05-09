@@ -98,4 +98,22 @@ describe("AddFriendForm", () => {
       "User not found"
     );
   });
+
+  it("marks email input invalid when creation fails", async () => {
+    const user = userEvent.setup();
+
+    mockCreateOrGetDirectConversationByEmail.mockRejectedValue(
+      new Error("User not found")
+    );
+
+    render(<AddFriendForm onConversationReady={() => {}} />);
+
+    const input = screen.getByLabelText(/add friend by email/i);
+
+    await user.type(input, "missing@example.com");
+    await user.click(screen.getByRole("button", { name: /add/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("User not found");
+    expect(input).toHaveAttribute("aria-invalid", "true");
+  });
 });
