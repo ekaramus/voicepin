@@ -1,4 +1,66 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useReducer, useRef } from "react";
+
+type PlaybackState = {
+  isPlaying: boolean;
+  currentTimeMs: number;
+  durationMs: number;
+};
+
+type PlaybackAction =
+  | { type: "reset"; durationMs: number }
+  | { type: "play" }
+  | { type: "pause" }
+  | { type: "time"; currentTimeMs: number }
+  | { type: "duration"; durationMs: number }
+  | { type: "ended" };
+
+function playbackReducer(
+  state: PlaybackState,
+  action: PlaybackAction
+): PlaybackState {
+  switch (action.type) {
+    case "reset":
+      return {
+        isPlaying: false,
+        currentTimeMs: 0,
+        durationMs: action.durationMs,
+      };
+
+    case "play":
+      return {
+        ...state,
+        isPlaying: true,
+      };
+
+    case "pause":
+      return {
+        ...state,
+        isPlaying: false,
+      };
+
+    case "time":
+      return {
+        ...state,
+        currentTimeMs: action.currentTimeMs,
+      };
+
+    case "duration":
+      return {
+        ...state,
+        durationMs: action.durationMs,
+      };
+
+    case "ended":
+      return {
+        ...state,
+        isPlaying: false,
+        currentTimeMs: 0,
+      };
+
+    default:
+      return state;
+  }
+}
 
 type UseAudioPlaybackInput = {
   audioUrl: string;
@@ -11,14 +73,17 @@ export function useAudioPlayback({
 }: UseAudioPlaybackInput) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTimeMs, setCurrentTimeMs] = useState(0);
-  const [durationMs, setDurationMs] = useState(fallbackDurationMs);
+  const [state, dispatch] = useReducer(playbackReducer, {
+    isPlaying: false,
+    currentTimeMs: 0,
+    durationMs: fallbackDurationMs,
+  });
 
   useEffect(() => {
-    setIsPlaying(false);
-    setCurrentTimeMs(0);
-    setDurationMs(fallbackDurationMs);
+    dispatch({
+      type: "reset",
+      durationMs: fallbackDurationMs,
+    });
   }, [audioUrl, fallbackDurationMs]);
 
   async function togglePlayback() {
@@ -30,12 +95,12 @@ export function useAudioPlayback({
 
     if (audio.paused) {
       await audio.play();
-      setIsPlaying(true);
+      dispatch({ type: "play" });
       return;
     }
 
     audio.pause();
-    setIsPlaying(false);
+    dispatch({ type: "pause" });
   }
 
   function handleLoadedMetadata() {
@@ -45,7 +110,10 @@ export function useAudioPlayback({
       return;
     }
 
-    setDurationMs(audio.duration * 1000);
+    dispatch({
+      type: "duration",
+      durationMs: audio.duration * 1000,
+    });
   }
 
   function handleTimeUpdate() {
@@ -55,12 +123,14 @@ export function useAudioPlayback({
       return;
     }
 
-    setCurrentTimeMs(audio.currentTime * 1000);
+    dispatch({
+      type: "time",
+      currentTimeMs: audio.currentTime * 1000,
+    });
   }
 
   function handleEnded() {
-    setIsPlaying(false);
-    setCurrentTimeMs(0);
+    dispatch({ type: "ended" });
 
     if (audioRef.current) {
       audioRef.current.currentTime = 0;
@@ -68,13 +138,15 @@ export function useAudioPlayback({
   }
 
   const progress =
-    durationMs > 0 ? Math.min(currentTimeMs / durationMs, 1) : 0;
+    state.durationMs > 0
+      ? Math.min(state.currentTimeMs / state.durationMs, 1)
+      : 0;
 
   return {
     audioRef,
-    isPlaying,
-    currentTimeMs,
-    durationMs,
+    isPlaying: state.isPlaying,
+    currentTimeMs: state.currentTimeMs,
+    durationMs: state.durationMs,
     progress,
     togglePlayback,
     handleLoadedMetadata,
