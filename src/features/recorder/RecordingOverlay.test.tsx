@@ -7,6 +7,7 @@ const defaultProps = {
   status: "idle" as const,
   error: null,
   durationMs: 0,
+  audioUrl: undefined,
   onStart: vi.fn(),
   onStop: vi.fn(),
   onReset: vi.fn(),
@@ -14,169 +15,202 @@ const defaultProps = {
   onSend: vi.fn(),
 };
 
+function renderRecordingOverlay(
+  props: Partial<React.ComponentProps<typeof RecordingOverlay>> = {}
+) {
+  const mergedProps = {
+    ...defaultProps,
+    ...props,
+  };
+
+  render(<RecordingOverlay {...mergedProps} />);
+
+  return mergedProps;
+}
+
 describe("RecordingOverlay", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("shows the 20 second max constraint", () => {
-    render(<RecordingOverlay {...defaultProps} />);
-
-    expect(screen.getByText(/0:20 max/i)).toBeInTheDocument();
-  });
-
-  it("starts recording when idle record button is pressed", async () => {
-    const user = userEvent.setup();
-    const onStart = vi.fn();
-
-    render(<RecordingOverlay {...defaultProps} onStart={onStart} />);
-
-    await user.click(screen.getByRole("button", { name: /start recording/i }));
-
-    expect(onStart).toHaveBeenCalledOnce();
-  });
-
-  it("stops recording when recording button is pressed", async () => {
-    const user = userEvent.setup();
-    const onStop = vi.fn();
-
-    render(
-      <RecordingOverlay
-        {...defaultProps}
-        status="recording"
-        durationMs={5_000}
-        onStop={onStop}
-      />
-    );
-
-    await user.click(screen.getByRole("button", { name: /stop recording/i }));
-
-    expect(onStop).toHaveBeenCalledOnce();
-  });
-
-  it("disables send until audio is recorded", () => {
-    render(<RecordingOverlay {...defaultProps} />);
-
-    expect(screen.getByRole("button", { name: /save/i })).toBeDisabled();
-  });
-
-  it("enables send when audio is recorded", () => {
-    render(
-      <RecordingOverlay
-        {...defaultProps}
-        status="recorded"
-        durationMs={1_500}
-        audioUrl="blob:test"
-      />
-    );
-
-    expect(screen.getByRole("button", { name: /save/i })).toBeEnabled();
-  });
-
-  it("shows too-short error", () => {
-    render(<RecordingOverlay {...defaultProps} status="error" error="too-short" />);
-
-    expect(screen.getByRole("alert")).toHaveTextContent(/too short/i);
-  });
-  it("calls onSend when recorded audio is sent", async () => {
-    const user = userEvent.setup();
-    const onSend = vi.fn();
-
-    render(
-      <RecordingOverlay
-        {...defaultProps}
-        status="recorded"
-        durationMs={1_500}
-        audioUrl="blob:test"
-        onSend={onSend}
-      />
-    );
-
-    await user.click(screen.getByRole("button", { name: /save/i }));
-
-    expect(onSend).toHaveBeenCalledOnce();
-  });
-
-  it("shows Save button in draft mode", () => {
-    render(
-      <RecordingOverlay
-        {...defaultProps}
-        mode="draft"
-        status="recorded"
-        durationMs={1500}
-        audioUrl="blob:test"
-      />
-    );
-
-    expect(screen.getByRole("button", { name: /save/i })).toBeInTheDocument();
-  });
-
-  it("shows Send button in direct mode", () => {
-    render(
-      <RecordingOverlay
-        {...defaultProps}
-        mode="direct"
-        status="recorded"
-        durationMs={1500}
-        audioUrl="blob:test"
-      />
-    );
-
-    expect(screen.getByRole("button", { name: /send/i })).toBeInTheDocument();
-  });
-
-  it("allows discarding recorded audio and closing the overlay", async () => {
-    const user = userEvent.setup();
-    const onClose = vi.fn();
-
-    render(
-      <RecordingOverlay
-        {...defaultProps}
-        status="recorded"
-        durationMs={1_500}
-        audioUrl="blob:test"
-        onClose={onClose}
-      />
-    );
-
-    await user.click(
-      screen.getByRole("button", { name: /discard recording and close/i })
-    );
-
-    expect(onClose).toHaveBeenCalledOnce();
-  });
-  
-  it("explains that close discards the current recording", () => {
-    render(
-      <RecordingOverlay
-        {...defaultProps}
-        status="recorded"
-        durationMs={1_500}
-        audioUrl="blob:test"
-      />
-    );
-
-    expect(screen.getByText(/discard and close/i)).toBeInTheDocument();
-  });
-
   it("renders as an accessible dialog", () => {
-    render(
-      <RecordingOverlay
-        mode="draft"
-        status="idle"
-        error={null}
-        durationMs={0}
-        audioUrl={undefined}
-        onStart={() => {}}
-        onStop={() => {}}
-        onReset={() => {}}
-        onClose={() => {}}
-        onSend={() => {}}
-      />
-    );
+    renderRecordingOverlay();
 
     expect(
       screen.getByRole("dialog", { name: /tiny thought/i })
     ).toBeInTheDocument();
+  });
+
+  it("shows start recording button when idle", () => {
+    renderRecordingOverlay();
+
+    expect(
+      screen.getByRole("button", { name: /start recording/i })
+    ).toBeInTheDocument();
+
+    expect(screen.getByText(/tap record to start/i)).toBeInTheDocument();
+  });
+
+  it("calls onStart when primary button is clicked while idle", async () => {
+    const user = userEvent.setup();
+    const onStart = vi.fn();
+
+    renderRecordingOverlay({ onStart });
+
+    await user.click(
+      screen.getByRole("button", { name: /start recording/i })
+    );
+
+    expect(onStart).toHaveBeenCalledOnce();
+  });
+
+  it("shows stop recording button while recording", () => {
+    renderRecordingOverlay({
+      status: "recording",
+      durationMs: 3_000,
+    });
+
+    expect(
+      screen.getByRole("button", { name: /stop recording/i })
+    ).toHaveAttribute("aria-pressed", "true");
+
+    expect(screen.getByText(/recording now/i)).toBeInTheDocument();
+  });
+
+  it("calls onStop when primary button is clicked while recording", async () => {
+    const user = userEvent.setup();
+    const onStop = vi.fn();
+
+    renderRecordingOverlay({
+      status: "recording",
+      durationMs: 3_000,
+      onStop,
+    });
+
+    await user.click(
+      screen.getByRole("button", { name: /stop recording/i })
+    );
+
+    expect(onStop).toHaveBeenCalledOnce();
+  });
+
+  it("shows remaining recording time", () => {
+    renderRecordingOverlay({
+      status: "recording",
+      durationMs: 8_000,
+    });
+
+    expect(screen.getByText("8")).toBeInTheDocument();
+    expect(screen.getByText(/of 20s/i)).toBeInTheDocument();
+    expect(screen.getByText(/12s left/i)).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("timer", { name: /12 seconds left out of 20/i })
+    ).toBeInTheDocument();
+  });
+
+  it("warns when recording is close to the limit", () => {
+    renderRecordingOverlay({
+      status: "recording",
+      durationMs: 16_000,
+    });
+
+    expect(screen.getByText(/almost there/i)).toBeInTheDocument();
+    expect(screen.getByText(/4 seconds left/i)).toBeInTheDocument();
+  });
+
+  it("shows error message", () => {
+    renderRecordingOverlay({
+      status: "error",
+      error: "Microphone access denied",
+    });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Microphone access denied"
+    );
+  });
+
+  it("shows preview actions when audio is available", () => {
+    renderRecordingOverlay({
+      status: "stopped",
+      durationMs: 5_000,
+      audioUrl: "blob:test-audio",
+    });
+
+    expect(
+      screen.getByRole("button", { name: /save draft/i })
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", {
+        name: /discard current recording and record again/i,
+      })
+    ).toBeInTheDocument();
+
+    expect(screen.getByText(/recording ready/i)).toBeInTheDocument();
+  });
+
+  it("uses Send label in conversation mode", () => {
+    renderRecordingOverlay({
+      mode: "conversation",
+      status: "stopped",
+      durationMs: 5_000,
+      audioUrl: "blob:test-audio",
+    });
+
+    expect(
+      screen.getByRole("button", { name: /^send$/i })
+    ).toBeInTheDocument();
+  });
+
+  it("calls onSend when save draft is clicked", async () => {
+    const user = userEvent.setup();
+    const onSend = vi.fn();
+
+    renderRecordingOverlay({
+      status: "stopped",
+      durationMs: 5_000,
+      audioUrl: "blob:test-audio",
+      onSend,
+    });
+
+    await user.click(screen.getByRole("button", { name: /save draft/i }));
+
+    expect(onSend).toHaveBeenCalledOnce();
+  });
+
+  it("calls onReset when discard and record again is clicked", async () => {
+    const user = userEvent.setup();
+    const onReset = vi.fn();
+
+    renderRecordingOverlay({
+      status: "stopped",
+      durationMs: 5_000,
+      audioUrl: "blob:test-audio",
+      onReset,
+    });
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /discard current recording and record again/i,
+      })
+    );
+
+    expect(onReset).toHaveBeenCalledOnce();
+  });
+
+  it("calls onClose when close button is clicked", async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+
+    renderRecordingOverlay({ onClose });
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /close recorder and discard current recording/i,
+      })
+    );
+
+    expect(onClose).toHaveBeenCalledOnce();
   });
 });
