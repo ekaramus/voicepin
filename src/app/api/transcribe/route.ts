@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+type TranscriptionRequestBody = {
+  messageId?: unknown;
+  audioPath?: unknown;
+};
+
 type ElevenLabsTranscriptionResponse = {
   text?: string;
   detail?: unknown;
@@ -9,59 +14,108 @@ type ElevenLabsTranscriptionResponse = {
 export async function POST(request: NextRequest) {
   const apiKey = process.env.ELEVENLABS_API_KEY;
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!apiKey || !supabaseUrl || !serviceRoleKey) {
+  if (!apiKey || !supabaseUrl || !anonKey || !serviceRoleKey) {
     console.error("Missing transcription environment configuration");
 
     return NextResponse.json(
-      {
-        error: "Server transcription environment is not configured.",
+      { 
+        error: "Server transcription environment is not configured.", 
       },
-      {
-        status: 500,
+      { 
+        status: 500, 
       }
     );
   }
 
-  const body = await request.json();
+  const authorization = request.headers.get("authorization");
+
+  if (!authorization) {
+    return NextResponse.json(
+      { 
+        error: "Authentication is required.", 
+      },
+      { 
+        status: 401, 
+      }
+    );
+  }
+
+  const body = (await request.json()) as TranscriptionRequestBody;
 
   const messageId = body.messageId;
-  const audioUrl = body.audioUrl;
+  const audioPath = body.audioPath;
 
   if (typeof messageId !== "string") {
     return NextResponse.json(
-      {
-        error: "messageId is required.",
+      { 
+        error: "messageId is required.", 
       },
-      {
-        status: 400,
+      { 
+        status: 400, 
       }
     );
   }
 
-  if (typeof audioUrl !== "string") {
+  if (typeof audioPath !== "string") {
     return NextResponse.json(
-      {
-        error: "audioUrl is required.",
+      { 
+        error: "audioPath is required.", 
       },
-      {
-        status: 400,
+      { 
+        status: 400, 
       }
     );
   }
 
-  const supabase = createClient(supabaseUrl, serviceRoleKey);
+  const userSupabase = createClient(supabaseUrl, anonKey, {
+    global: {
+      headers: {
+        Authorization: authorization,
+      },
+    },
+  });
+
+  const { data: accessibleMessage, error: accessError } = await userSupabase
+    .from("messages")
+    .select("id, audio_path")
+    .eq("id", messageId)
+    .single();
+
+  if (accessError || !accessibleMessage) {
+    return NextResponse.json(
+      { 
+        error: "Message was not found or is not accessible.",
+      },
+      { 
+        status: 404, 
+      }
+    );
+  }
+
+  if (accessibleMessage.audio_path !== audioPath) {
+    return NextResponse.json(
+      { 
+        error: "audioPath does not match message.", 
+      },
+      { 
+        status: 403, 
+      }
+    );
+  }
+
+  const serviceSupabase = createClient(supabaseUrl, serviceRoleKey);
 
   try {
-    const audioResponse = await fetch(audioUrl);
+    const { data: audioBlob, error: downloadError } =
+      await serviceSupabase.storage.from("voice-messages").download(audioPath);
 
-    if (!audioResponse.ok) {
-      console.error("Failed to download audio for transcription", {
-        status: audioResponse.status,
-      });
+    if (downloadError || !audioBlob) {
+      console.error("Failed to download audio for transcription", downloadError);
 
-      await supabase
+      await serviceSupabase
         .from("messages")
         .update({
           transcription_status: "failed",
@@ -69,16 +123,14 @@ export async function POST(request: NextRequest) {
         .eq("id", messageId);
 
       return NextResponse.json(
-        {
-          error: "Could not download audio for transcription.",
+        { 
+          error: "Could not download audio for transcription.", 
         },
-        {
-          status: 400,
+        { 
+          status: 400, 
         }
       );
     }
-
-    const audioBlob = await audioResponse.blob();
 
     const formData = new FormData();
     formData.append("file", audioBlob, "voicepin.webm");
@@ -111,7 +163,7 @@ export async function POST(request: NextRequest) {
         detail: transcriptionJson.detail ?? transcriptionText,
       });
 
-      await supabase
+      await serviceSupabase
         .from("messages")
         .update({
           transcription_status: "failed",
@@ -126,13 +178,13 @@ export async function POST(request: NextRequest) {
               ? JSON.stringify(transcriptionJson.detail)
               : transcriptionText,
         },
-        {
-          status: 502,
+        { 
+          status: 502, 
         }
       );
     }
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await serviceSupabase
       .from("messages")
       .update({
         transcript: transcriptionJson.text,
@@ -144,11 +196,11 @@ export async function POST(request: NextRequest) {
       console.error("Failed to persist transcription", updateError);
 
       return NextResponse.json(
-        {
-          error: "Could not persist transcription.",
+        { 
+          error: "Could not persist transcription.", 
         },
-        {
-          status: 500,
+        { 
+          status: 500, 
         }
       );
     }
@@ -159,7 +211,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Unexpected transcription route failure", error);
 
-    await supabase
+    await serviceSupabase
       .from("messages")
       .update({
         transcription_status: "failed",
@@ -167,11 +219,11 @@ export async function POST(request: NextRequest) {
       .eq("id", messageId);
 
     return NextResponse.json(
-      {
-        error: "Unexpected transcription failure.",
+      { 
+        error: "Unexpected transcription failure.", 
       },
-      {
-        status: 500,
+      { 
+        status: 500, 
       }
     );
   }
