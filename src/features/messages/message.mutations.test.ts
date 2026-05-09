@@ -1,7 +1,6 @@
 const mockInsert = vi.fn();
 const mockSelect = vi.fn();
 const mockSingle = vi.fn();
-const mockGetPublicUrl = vi.fn();
 const mockGetRequiredUser = vi.fn();
 
 vi.mock("@/lib/supabase/client", () => ({
@@ -9,11 +8,6 @@ vi.mock("@/lib/supabase/client", () => ({
     from: vi.fn(() => ({
       insert: mockInsert,
     })),
-    storage: {
-      from: vi.fn(() => ({
-        getPublicUrl: mockGetPublicUrl,
-      })),
-    },
   }),
 }));
 
@@ -38,12 +32,6 @@ describe("insertMessage", () => {
 
     mockSelect.mockReturnValue({
       single: mockSingle,
-    });
-
-    mockGetPublicUrl.mockReturnValue({
-      data: {
-        publicUrl: "https://example.supabase.co/audio.webm",
-      },
     });
   });
 
@@ -74,7 +62,7 @@ describe("insertMessage", () => {
 
     expect(result).toEqual({
       id: "message-1",
-      audioUrl: "https://example.supabase.co/audio.webm",
+      audioPath: "audio.webm",
     });
   });
 

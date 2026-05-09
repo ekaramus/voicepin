@@ -9,7 +9,7 @@ type InsertMessageInput = {
 
 type InsertMessageResult = {
   id: string;
-  audioUrl: string;
+  audioPath: string;
 };
 
 export async function insertMessage({
@@ -38,7 +38,6 @@ export async function insertMessage({
 
   return {
     id: data.id,
-    audioUrl: supabase.storage.from("voice-messages").getPublicUrl(data.audio_path)
-      .data.publicUrl,
+    audioPath: data.audio_path,
   };
 }
