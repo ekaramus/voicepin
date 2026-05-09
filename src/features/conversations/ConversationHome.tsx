@@ -31,12 +31,15 @@ export function ConversationHome() {
 
   const [isRecorderOpen, setIsRecorderOpen] = useState(false);
   const [isDestinationPickerOpen, setIsDestinationPickerOpen] = useState(false);
+ 
   const draftState = useDraftSnapshot();
   const [draftSendStatus, setDraftSendStatus] = useState<
     "idle" | "sending" | "error"
   >("idle");
   const [draftSendError, setDraftSendError] = useState<string | null>(null);
+ 
   const recorder = useAudioRecorder();
+ 
   const isRefreshingConversationsRef = useRef(false);
 
   const refreshConversations = useCallback(async () => {
@@ -66,8 +69,38 @@ export function ConversationHome() {
   }, []);
 
   useEffect(() => {
-    void refreshConversations();
-  }, [refreshConversations]);
+    let isMounted = true;
+
+    async function loadInitialConversations() {
+      try {
+        const data = await listConversations();
+
+        if (!isMounted) {
+          return;
+        }
+
+        setConversations(data);
+        setConversationStatus("ready");
+      } catch (error) {
+        console.error("Failed to load conversations:", error);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setConversationStatus("error");
+        setConversationError(
+          getErrorMessage(error, "Could not load conversations.")
+        );
+      }
+    }
+
+    void loadInitialConversations();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   function closeRecorder() {
     setIsRecorderOpen(false);
@@ -153,6 +186,7 @@ export function ConversationHome() {
     <div className="flex flex-1 flex-col">
       <header className="border-b-2 border-[#27251f] px-5 py-4">
         <h1 className="text-2xl font-black tracking-[-0.08em]">VoicePin</h1>
+
         <p className="mt-1 text-xs uppercase tracking-[0.16em] text-[#6f6758]">
           tiny voice snapshots
         </p>
@@ -162,6 +196,7 @@ export function ConversationHome() {
         <p className="text-[10px] uppercase tracking-[0.2em] text-[#f7d35f]">
           Beta recorder
         </p>
+
         <p className="mt-1 text-sm">No typing. Max 20 seconds.</p>
       </section>
 
