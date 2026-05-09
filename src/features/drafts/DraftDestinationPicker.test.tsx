@@ -141,4 +141,19 @@ describe("DraftDestinationPicker", () => {
       screen.getByRole("dialog", { name: /send to/i })
     ).toBeInTheDocument();
   });
+
+  it("has accessible cancel button label", () => {
+    render(
+      <DraftDestinationPicker
+        draft={draft}
+        conversations={conversations}
+        onSelect={() => {}}
+        onCancel={() => {}}
+      />
+    );
+
+    expect(
+      screen.getByRole("button", { name: /cancel sending draft/i })
+    ).toBeInTheDocument();
+  });
 });

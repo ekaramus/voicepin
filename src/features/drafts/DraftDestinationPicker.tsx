@@ -37,6 +37,7 @@ export function DraftDestinationPicker({
 
         <button
           type="button"
+          aria-label="Cancel sending draft"
           onClick={onCancel}
           disabled={sendStatus === "sending"}
           className="text-xs font-black uppercase tracking-[0.12em] text-[#d94f2b] disabled:opacity-50"
