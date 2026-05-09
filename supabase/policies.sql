@@ -11,8 +11,10 @@ drop policy if exists "Users can read own profile" on profiles;
 drop policy if exists "Users can insert own profile" on profiles;
 drop policy if exists "Users can update own profile" on profiles;
 drop policy if exists "Authenticated users can read profiles" on profiles;
+drop policy if exists "Authenticated users can find profiles by email" on profiles;
 
 drop policy if exists "Users can read own memberships" on conversation_members;
+drop policy if exists "Users can read memberships for own conversations" on conversation_members;
 drop policy if exists "Users can insert own memberships" on conversation_members;
 drop policy if exists "Users can add members to conversations they created" on conversation_members;
 
@@ -24,6 +26,7 @@ drop policy if exists "Users can insert messages in own conversations" on messag
 
 drop policy if exists "Authenticated users can upload voice messages" on storage.objects;
 drop policy if exists "Authenticated users can read voice messages" on storage.objects;
+drop policy if exists "Public can read voice messages" on storage.objects;
 
 -- =========================
 -- Profiles
@@ -48,12 +51,9 @@ to authenticated
 using (id = auth.uid())
 with check (id = auth.uid());
 
--- 🔥 IMPORTANT: allow reading other users (needed for email display)
-create policy "Authenticated users can read profiles"
-on profiles
-for select
-to authenticated
-using (true);
+-- Other profile lookups are intentionally handled through narrow RPC functions:
+-- - find_profile_by_email(text)
+-- - get_profiles_by_ids(uuid[])
 
 -- =========================
 -- Conversations
@@ -83,7 +83,6 @@ with check (created_by = auth.uid());
 -- Conversation members
 -- =========================
 
--- ⚠️ ONLY own memberships (no recursion!)
 create policy "Users can read own memberships"
 on conversation_members
 for select
@@ -141,17 +140,13 @@ with check (
 );
 
 -- =========================
--- Storage (voice messages)
+-- Storage
 -- =========================
 
+-- Client can upload into the voice-messages bucket.
+-- Reads should go through signed URLs generated server-side.
 create policy "Authenticated users can upload voice messages"
 on storage.objects
 for insert
 to authenticated
 with check (bucket_id = 'voice-messages');
-
-create policy "Authenticated users can read voice messages"
-on storage.objects
-for select
-to authenticated
-using (bucket_id = 'voice-messages');
