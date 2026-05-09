@@ -2,8 +2,8 @@ const mockGetRequiredUser = vi.fn();
 const mockGetOrCreateSelfConversation = vi.fn();
 
 const mockConversationMembershipEq = vi.fn();
-const mockProfileSingle = vi.fn();
-const mockMessageMaybeSingle = vi.fn();
+const mockProfilesIn = vi.fn();
+const mockMessagesOrder = vi.fn();
 
 vi.mock("@/features/auth/getRequiredUser", () => ({
   getRequiredUser: () => mockGetRequiredUser(),
@@ -39,14 +39,12 @@ vi.mock("@/lib/supabase/client", () => ({
       if (table === "profiles") {
         return {
           select: (query: string) => {
-            if (query !== "email") {
+            if (query !== "id, email") {
               throw new Error(`Unexpected profiles query: ${query}`);
             }
 
             return {
-              eq: () => ({
-                single: mockProfileSingle,
-              }),
+              in: mockProfilesIn,
             };
           },
         };
@@ -54,15 +52,20 @@ vi.mock("@/lib/supabase/client", () => ({
 
       if (table === "messages") {
         return {
-          select: () => ({
-            eq: () => ({
-              order: () => ({
-                limit: () => ({
-                  maybeSingle: mockMessageMaybeSingle,
-                }),
+          select: (query: string) => {
+            if (
+              query !==
+              "conversation_id, transcript, duration_ms, created_at"
+            ) {
+              throw new Error(`Unexpected messages query: ${query}`);
+            }
+
+            return {
+              in: () => ({
+                order: mockMessagesOrder,
               }),
-            }),
-          }),
+            };
+          },
         };
       }
 
@@ -98,13 +101,13 @@ describe("listConversations", () => {
       error: null,
     });
 
-    mockProfileSingle.mockResolvedValue({
-      data: null,
+    mockProfilesIn.mockResolvedValue({
+      data: [],
       error: null,
     });
 
-    mockMessageMaybeSingle.mockResolvedValue({
-      data: null,
+    mockMessagesOrder.mockResolvedValue({
+      data: [],
       error: null,
     });
   });
@@ -137,10 +140,13 @@ describe("listConversations", () => {
       error: null,
     });
 
-    mockProfileSingle.mockResolvedValue({
-      data: {
-        email: "friend@example.com",
-      },
+    mockProfilesIn.mockResolvedValue({
+      data: [
+        {
+          id: "friend-1",
+          email: "friend@example.com",
+        },
+      ],
       error: null,
     });
 
@@ -186,12 +192,15 @@ describe("listConversations", () => {
   });
 
   it("uses latest message as preview", async () => {
-    mockMessageMaybeSingle.mockResolvedValue({
-      data: {
-        transcript: "Latest voice note",
-        duration_ms: 6000,
-        created_at: "2026-04-26T14:00:00.000Z",
-      },
+    mockMessagesOrder.mockResolvedValue({
+      data: [
+        {
+          conversation_id: "self-conversation",
+          transcript: "Latest voice note",
+          duration_ms: 6_000,
+          created_at: "2026-04-26T14:00:00.000Z",
+        },
+      ],
       error: null,
     });
 
@@ -200,15 +209,73 @@ describe("listConversations", () => {
     expect(conversations[0]).toEqual(
       expect.objectContaining({
         preview: "Latest voice note",
-        durationMs: 6000,
+        durationMs: 6_000,
         updatedAt: "2026-04-26T14:00:00.000Z",
       })
     );
   });
 
+  it("uses first latest message per conversation", async () => {
+    mockConversationMembershipEq.mockResolvedValue({
+      data: [
+        {
+          conversation_id: "direct-1",
+          conversations: {
+            id: "direct-1",
+            type: "direct",
+            created_at: "2026-04-26T13:00:00.000Z",
+            direct_pair_key: "user-1:friend-1",
+          },
+        },
+      ],
+      error: null,
+    });
+
+    mockProfilesIn.mockResolvedValue({
+      data: [
+        {
+          id: "friend-1",
+          email: "friend@example.com",
+        },
+      ],
+      error: null,
+    });
+
+    mockMessagesOrder.mockResolvedValue({
+      data: [
+        {
+          conversation_id: "direct-1",
+          transcript: "Newest",
+          duration_ms: 7_000,
+          created_at: "2026-04-26T15:00:00.000Z",
+        },
+        {
+          conversation_id: "direct-1",
+          transcript: "Older",
+          duration_ms: 5_000,
+          created_at: "2026-04-26T14:00:00.000Z",
+        },
+      ],
+      error: null,
+    });
+
+    const conversations = await listConversations();
+
+    expect(conversations).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "direct-1",
+          preview: "Newest",
+          durationMs: 7_000,
+          updatedAt: "2026-04-26T15:00:00.000Z",
+        }),
+      ])
+    );
+  });
+
   it("uses fallback preview when no messages exist", async () => {
-    mockMessageMaybeSingle.mockResolvedValue({
-      data: null,
+    mockMessagesOrder.mockResolvedValue({
+      data: [],
       error: null,
     });
 
@@ -231,5 +298,38 @@ describe("listConversations", () => {
     await expect(listConversations()).rejects.toThrow(
       "Membership load failed"
     );
+  });
+
+  it("throws when batched profile lookup fails", async () => {
+    mockConversationMembershipEq.mockResolvedValue({
+      data: [
+        {
+          conversation_id: "direct-1",
+          conversations: {
+            id: "direct-1",
+            type: "direct",
+            created_at: "2026-04-26T13:00:00.000Z",
+            direct_pair_key: "user-1:friend-1",
+          },
+        },
+      ],
+      error: null,
+    });
+
+    mockProfilesIn.mockResolvedValue({
+      data: null,
+      error: new Error("Profiles failed"),
+    });
+
+    await expect(listConversations()).rejects.toThrow("Profiles failed");
+  });
+
+  it("throws when batched message preview lookup fails", async () => {
+    mockMessagesOrder.mockResolvedValue({
+      data: null,
+      error: new Error("Messages failed"),
+    });
+
+    await expect(listConversations()).rejects.toThrow("Messages failed");
   });
 });
