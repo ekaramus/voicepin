@@ -12,8 +12,9 @@ For a fresh Supabase project, run the SQL files in this order:
 
 ```txt
 1. schema.sql
-2. policies.sql
-3. realtime.sql
+2. functions.sql
+3. policies.sql
+4. realtime.sql
 ```
 
 Recommended place to run them:
@@ -46,6 +47,17 @@ It also includes important fields such as:
 
 - `conversations.direct_pair_key`
 - `messages.transcription_status`
+
+---
+
+### `functions.sql`
+
+Defines narrow RPC helpers used by the app:
+
+- `find_profile_by_email(text)`
+- `get_profiles_by_ids(uuid[])`
+
+These replace broad profile read access while keeping direct conversation lookup possible.
 
 ---
 
