@@ -11,17 +11,16 @@ vi.mock("@/features/auth/getRequiredUser", () => ({
 
 vi.mock("@/lib/supabase/client", () => ({
   createSupabaseBrowserClient: () => ({
-    from: (table: string) => {
-      if (table === "profiles") {
-        return {
-          select: () => ({
-            eq: () => ({
-              single: mockProfileSingle,
-            }),
-          }),
-        };
+    rpc: (name: string, args: unknown) => {
+      if (name !== "find_profile_by_email") {
+        throw new Error(`Unexpected RPC: ${name}`);
       }
 
+      return {
+        single: () => mockProfileSingle(args),
+      };
+    },
+    from: (table: string) => {
       if (table === "conversations") {
         return {
           select: () => ({
@@ -93,6 +92,10 @@ describe("createOrGetDirectConversationByEmail", () => {
       "friend@example.com"
     );
 
+    expect(mockProfileSingle).toHaveBeenCalledWith({
+      search_email: "friend@example.com",
+    });
+
     expect(conversation).toEqual({
       id: "conversation-1",
       type: "direct",
@@ -119,7 +122,9 @@ describe("createOrGetDirectConversationByEmail", () => {
   it("normalizes email before lookup", async () => {
     await createOrGetDirectConversationByEmail("  FRIEND@EXAMPLE.COM ");
 
-    expect(mockProfileSingle).toHaveBeenCalledOnce();
+    expect(mockProfileSingle).toHaveBeenCalledWith({
+      search_email: "friend@example.com",
+    });
   });
 
   it("returns existing direct conversation when pair already exists", async () => {
