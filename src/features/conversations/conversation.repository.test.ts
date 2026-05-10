@@ -2,7 +2,7 @@ const mockGetRequiredUser = vi.fn();
 const mockGetOrCreateSelfConversation = vi.fn();
 
 const mockConversationMembershipEq = vi.fn();
-const mockProfilesIn = vi.fn();
+const mockProfilesRpc = vi.fn();
 const mockMessagesOrder = vi.fn();
 
 vi.mock("@/features/auth/getRequiredUser", () => ({
@@ -16,6 +16,14 @@ vi.mock("./selfConversation.repository", () => ({
 
 vi.mock("@/lib/supabase/client", () => ({
   createSupabaseBrowserClient: () => ({
+    rpc: (name: string, args: unknown) => {
+      if (name !== "get_profiles_by_ids") {
+        throw new Error(`Unexpected RPC: ${name}`);
+      }
+
+      return mockProfilesRpc(args);
+    },
+
     from: (table: string) => {
       if (table === "conversation_members") {
         return {
@@ -29,23 +37,7 @@ vi.mock("@/lib/supabase/client", () => ({
               };
             }
 
-            throw new Error(
-              `Unexpected conversation_members query: ${query}`
-            );
-          },
-        };
-      }
-
-      if (table === "profiles") {
-        return {
-          select: (query: string) => {
-            if (query !== "id, email") {
-              throw new Error(`Unexpected profiles query: ${query}`);
-            }
-
-            return {
-              in: mockProfilesIn,
-            };
+            throw new Error(`Unexpected conversation_members query: ${query}`);
           },
         };
       }
@@ -101,7 +93,7 @@ describe("listConversations", () => {
       error: null,
     });
 
-    mockProfilesIn.mockResolvedValue({
+    mockProfilesRpc.mockResolvedValue({
       data: [],
       error: null,
     });
@@ -140,7 +132,7 @@ describe("listConversations", () => {
       error: null,
     });
 
-    mockProfilesIn.mockResolvedValue({
+    mockProfilesRpc.mockResolvedValue({
       data: [
         {
           id: "friend-1",
@@ -151,6 +143,10 @@ describe("listConversations", () => {
     });
 
     const conversations = await listConversations();
+
+    expect(mockProfilesRpc).toHaveBeenCalledWith({
+      profile_ids: ["friend-1"],
+    });
 
     expect(conversations).toEqual(
       expect.arrayContaining([
@@ -231,7 +227,7 @@ describe("listConversations", () => {
       error: null,
     });
 
-    mockProfilesIn.mockResolvedValue({
+    mockProfilesRpc.mockResolvedValue({
       data: [
         {
           id: "friend-1",
@@ -265,6 +261,7 @@ describe("listConversations", () => {
       expect.arrayContaining([
         expect.objectContaining({
           id: "direct-1",
+          name: "friend@example.com",
           preview: "Newest",
           durationMs: 7_000,
           updatedAt: "2026-04-26T15:00:00.000Z",
@@ -316,7 +313,7 @@ describe("listConversations", () => {
       error: null,
     });
 
-    mockProfilesIn.mockResolvedValue({
+    mockProfilesRpc.mockResolvedValue({
       data: null,
       error: new Error("Profiles failed"),
     });
