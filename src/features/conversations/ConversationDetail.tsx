@@ -112,7 +112,7 @@ export function ConversationDetail({
 
       void requestTranscription({
         messageId: message.id,
-        audioUrl: message.audioUrl,
+        audioPath: message.audioPath,
       }).catch((error) => {
         console.error("Failed to request transcription:", error);
       });

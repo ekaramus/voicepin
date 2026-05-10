@@ -142,10 +142,11 @@ export function ConversationHome() {
 
       void requestTranscription({
         messageId: message.id,
-        audioUrl: message.audioUrl,
+        audioPath: message.audioPath,
       }).catch((error) => {
         console.error("Failed to request transcription:", error);
       });
+
     } catch (error) {
       setDraftSendStatus("error");
       setDraftSendError(
