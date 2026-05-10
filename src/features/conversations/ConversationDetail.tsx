@@ -179,7 +179,7 @@ export function ConversationDetail({
 
       {isRecorderOpen && (
         <RecordingOverlay
-          mode="direct"
+          mode="conversation"
           status={recorder.status}
           error={recorder.error}
           durationMs={recorder.durationMs}
