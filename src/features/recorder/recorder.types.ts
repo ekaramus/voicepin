@@ -2,7 +2,7 @@ export type RecorderStatus =
   | "idle"
   | "requesting-permission"
   | "recording"
-  | "recorded"
+  | "stopped"
   | "error";
 
 export type RecordedAudio = {

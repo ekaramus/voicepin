@@ -68,8 +68,8 @@ describe("useAudioRecorder", () => {
     expect(result.current.isRecording).toBe(true);
   });
 
-  it("creates recorded audio when stopped after minimum duration", async () => {
-    const { result } = renderHook(() => useAudioRecorder());
+it("creates audio preview when stopped after minimum duration", async () => {    
+  const { result } = renderHook(() => useAudioRecorder());
 
     await act(async () => {
       await result.current.startRecording();
@@ -81,7 +81,7 @@ describe("useAudioRecorder", () => {
       result.current.stopRecording();
     });
 
-    expect(result.current.status).toBe("recorded");
+    expect(result.current.status).toBe("stopped");
     expect(result.current.audio?.url).toBe("blob:voicepin-audio");
     expect(result.current.audio?.durationMs).toBeGreaterThanOrEqual(1_000);
     expect(stopTrack).toHaveBeenCalled();
@@ -117,7 +117,7 @@ describe("useAudioRecorder", () => {
       vi.advanceTimersByTime(20_000);
     });
 
-    expect(result.current.status).toBe("recorded");
+    expect(result.current.status).toBe("stopped");
     expect(result.current.audio).not.toBeNull();
   });
 
