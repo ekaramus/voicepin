@@ -723,3 +723,28 @@ Decision notes:
 - Circular countdown was chosen for a stronger retro recorder feel
 - Text remains visible alongside the circular indicator so time information is not color-only
 - The reset action uses explicit destructive wording to reduce accidental data loss
+
+### Step 24 — Security Hardening
+
+- Moved message playback away from public audio URLs
+- Added authenticated API route for short-lived signed audio URLs
+- Updated message loading to request signed audio URLs per accessible message
+- Updated transcription flow to use private storage paths instead of public audio URLs
+- Secured transcription route with authenticated message access checks
+- Removed broad authenticated profile read policy
+- Added narrow RPC helpers for exact-email user lookup and profile label resolution
+- Kept Supabase service role usage server-only
+
+Testing:
+- Verified signed audio URL helper sends authenticated requests
+- Verified unauthenticated audio URL requests fail
+- Verified message insert returns private audio path instead of public URL
+- Verified transcription requests require authentication
+- Verified direct conversation lookup uses narrow RPC instead of broad profile reads
+- Verified existing conversation and message repository tests pass after security changes
+
+Decision notes:
+- Client uploads remain allowed for MVP speed
+- Audio reads now go through server-generated signed URLs
+- Profile lookup remains exact-email based for private beta, but broad profile reads were removed
+- Invite codes or explicit contact requests remain a future improvement
