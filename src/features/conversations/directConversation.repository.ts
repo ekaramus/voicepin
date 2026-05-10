@@ -52,9 +52,9 @@ export async function createOrGetDirectConversationByEmail(
   }
 
   const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("id, email")
-    .eq("email", normalizedEmail)
+    .rpc("find_profile_by_email", {
+      search_email: normalizedEmail,
+    })
     .single();
 
   if (profileError || !profile) {
