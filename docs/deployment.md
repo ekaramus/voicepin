@@ -34,6 +34,7 @@ Run SQL files in this order:
 
 ```txt
 supabase/schema.sql
+supabase/functions.sql
 supabase/policies.sql
 supabase/realtime.sql
 ```
@@ -191,15 +192,20 @@ Before inviting users:
 
 ## Known production risks
 
-### Public profile lookup
+### Profile lookup
 
-Authenticated users can currently read profiles to find users by email.
+Direct conversation lookup now uses narrow RPC helpers instead of broad profile reads.
 
-This is acceptable for a small private beta, but should later be replaced with:
+This is safer for private beta, but a future invite-code system would be better before wider launch.
 
-- usernames
-- invite codes
-- explicit contact requests
+### Audio access
+
+Audio playback now uses short-lived signed URLs generated server-side after message access is verified.
+
+Future improvement:
+
+- stricter storage path ownership
+- shorter signed URL lifetime if needed
 
 ---
 
