@@ -141,7 +141,7 @@ export function useAudioRecorder(): UseAudioRecorderResult {
           url,
         });
 
-        setStatus("recorded");
+        setStatus("stopped");
       };
 
       recorder.start();

@@ -213,4 +213,18 @@ describe("RecordingOverlay", () => {
 
     expect(onClose).toHaveBeenCalledOnce();
   });
+
+  it("shows microphone permission state", () => {
+    renderRecordingOverlay({
+      status: "requesting-permission",
+    });
+
+    expect(screen.getByText(/waiting for microphone permission/i)).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", { name: /start recording/i })
+    ).toBeDisabled();
+
+    expect(screen.getByText(/opening microphone/i)).toBeInTheDocument();
+  });
 });

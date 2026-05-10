@@ -1,10 +1,11 @@
 "use client";
 
 import { Mic, Square } from "lucide-react";
+import { RecorderStatus } from "./recorder.types";
 
 type RecordingOverlayProps = {
   mode: "draft" | "conversation";
-  status: "idle" | "recording" | "stopped" | "error";
+  status: RecorderStatus;
   error: string | null;
   durationMs: number;
   audioUrl?: string;
@@ -44,6 +45,7 @@ export function RecordingOverlay({
   onClose,
   onSend,
 }: RecordingOverlayProps) {
+  const isRequestingPermission = status === "requesting-permission";
   const isRecording = status === "recording";
   const hasPreview = Boolean(audioUrl);
 
@@ -52,6 +54,10 @@ export function RecordingOverlay({
   const progressDegrees = progress * 360;
 
   function handlePrimaryAction() {
+    if (isRequestingPermission) {
+      return;
+    }
+
     if (isRecording) {
       onStop();
       return;
@@ -118,13 +124,15 @@ export function RecordingOverlay({
         </div>
 
         <p aria-live="polite" className="mt-4 text-sm text-[#eadfc9]">
-          {isRecording
-            ? secondsLeft <= 5
-              ? `Almost there. ${secondsLeft} seconds left.`
-              : "Recording now. Tap stop to finish."
-            : hasPreview
-              ? "Recording ready. You can send, save, or reset it."
-              : "Tap record to start."}
+          {isRequestingPermission
+            ? "Waiting for microphone permission."
+            : isRecording
+              ? secondsLeft <= 5
+                ? `Almost there. ${secondsLeft} seconds left.`
+                : "Recording now. Tap stop to finish."
+              : hasPreview
+                ? "Recording ready. You can send, save, or reset it."
+                : "Tap record to start."}
         </p>
 
         {error && (
@@ -139,9 +147,10 @@ export function RecordingOverlay({
         <button
           type="button"
           onClick={handlePrimaryAction}
+          disabled={isRequestingPermission}
           aria-label={isRecording ? "Stop recording" : "Start recording"}
           aria-pressed={isRecording}
-          className="mt-8 grid h-24 w-24 place-items-center rounded-full border-[3px] border-[#f4ead7] bg-[#d94f2b] text-[#f4ead7] shadow-[6px_6px_0_#f4ead7] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
+          className="mt-8 grid h-24 w-24 place-items-center rounded-full border-[3px] border-[#f4ead7] bg-[#d94f2b] text-[#f4ead7] shadow-[6px_6px_0_#f4ead7] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none disabled:opacity-60"
         >
           {isRecording ? (
             <Square aria-hidden="true" size={34} fill="currentColor" />
@@ -151,7 +160,12 @@ export function RecordingOverlay({
         </button>
 
         <p className="mt-3 text-xs font-black uppercase tracking-[0.16em] text-[#eadfc9]">
-          {isRecording ? "Stop recording" : "Start recording"}
+          {isRequestingPermission
+            ? "Opening microphone..."
+            : isRecording
+              ? "Stop recording" 
+              : "Start recording"
+          }
         </p>
 
         {hasPreview && !isRecording && (
