@@ -78,10 +78,9 @@ async function getProfilesById(
 
   const supabase = createSupabaseBrowserClient();
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id, email")
-    .in("id", userIds);
+  const { data, error } = await supabase.rpc("get_profiles_by_ids", {
+    profile_ids: userIds,
+  });
 
   if (error) {
     throw error;
