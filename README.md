@@ -24,6 +24,16 @@ Every message is limited to a few seconds and automatically transcribed so it ca
 
 ---
 
+## License
+
+Copyright © 2026 Ewa Karamus. All rights reserved.
+
+This project is shared for portfolio, review, and recruitment purposes only. Use, copying, modification, redistribution, deployment, or forking for independent use is not permitted without prior written approval.
+
+Suggestions and pull requests are welcome for review, but they do not grant usage rights. See [`LICENSE`](LICENSE).
+
+---
+
 ## Constraints
 
 - Max message length: 20 seconds
