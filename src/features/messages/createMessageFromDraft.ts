@@ -17,7 +17,7 @@ export function createMessageFromDraft({
     audioUrl: draft.audioUrl,
     durationMs: draft.durationMs,
     transcript: null,
-    status: "local",
+    status: "transcribing",
     createdAt: new Date().toISOString(),
   };
 }
